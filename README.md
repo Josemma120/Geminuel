@@ -56,14 +56,6 @@ Geminuel cuenta con capacidades avanzadas orientadas al aprendizaje e interacci�
 
 ---
 
-## 💬 Ejemplo de Prompt / Consulta
-
-Puedes interactuar con Geminuel utilizando consultas detalladas como la siguiente:
-
-> *"Geminuel, ayúdame a crear un programa en Python que pida la edad de una persona y diga si es mayor o menor de edad. Explícame cada parte del código."*
-
----
-
 ## 🚀 ¿Cómo Ejecutar el Proyecto Localmente?
 
 Dado que Geminuel es una aplicación web estática (HTML5, CSS3 y JavaScript ES6+), no requiere instalaciones complejas ni servidores Node.js.
