@@ -369,7 +369,7 @@ async function streamAIResponse(text, typingEl) {
       </div>
       <span class="ai-name">Geminuel</span>
     </div>
-    <div class="ai-content" id="streaming-content"></div>
+    <div class="ai-content"></div>
     <div class="message-actions">
       <button class="action-btn copy-btn" title="Copiar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -386,7 +386,7 @@ async function streamAIResponse(text, typingEl) {
     </div>
   `;
 
-  const contentEl = document.getElementById('streaming-content');
+  const contentEl = typingEl.querySelector('.ai-content');
 
   // Stream character by character
   let displayed = '';
