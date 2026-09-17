@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Geminuel — Tu asistente de IA</title>
+  <meta name="description" content="Geminuel es tu asistente de inteligencia artificial personal. Conversaciones naturales, respuestas inteligentes." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- Hidden SVG gradient defs used by logo icons -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4285f4"/>
+      <stop offset="50%" stop-color="#9b72cb"/>
+      <stop offset="100%" stop-color="#d96570"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+
+  <div class="sidebar-header">
+    <button class="new-chat-btn" id="new-chat-btn" title="Nueva conversación">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 8v8M8 12h8"/>
+      </svg>
+      <span>Nuevo chat</span>
+    </button>
+    <button class="icon-btn sidebar-close-btn" id="sidebar-close-btn" title="Cerrar" aria-label="Cerrar menú">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-label">Conversaciones</div>
+    <div class="chat-list" id="chat-list"></div>
+    <p class="chat-list-empty" id="chat-list-empty" hidden>Sin conversaciones todavía.</p>
+  </nav>
+  
+</aside>
+
+<!-- Overlay (solo móvil) -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<!-- Main Chat Area -->
+<main class="main" id="main">
+
+  <!-- Top bar -->
+  <header class="topbar">
+
+    <button class="icon-btn menu-btn" id="menu-btn" title="Mostrar conversaciones" aria-label="Mostrar conversaciones">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="14" y2="18"/>
+      </svg>
+    </button>
+
+    <div class="topbar-title" id="topbar-title">
+      <span class="logo-terminal" aria-hidden="true"><span class="logo-glyph">G</span><span class="logo-cursor"></span></span>
+      Geminuel
+      <span class="topbar-chat-title" id="topbar-chat-title" hidden></span>
+    </div>
+
+    <div class="topbar-actions">
+      <button class="icon-btn" id="theme-toggle" title="Cambiar tema" aria-label="Cambiar tema">
+        <svg id="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <svg id="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Chat messages -->
+  <div class="chat-area" id="chat-area">
+
+    <!-- Welcome screen (shown when no messages) -->
+    <div class="welcome" id="welcome-screen">
+      <pre class="ascii-logo" aria-label="GEMINUEL">
+  ____ _____ __  __ ___ _  _ _   _ _____ _     
+ / ___| ____|  \/  |_ _| \| | | | | ____| |    
+| |  _|  _| | |\/| || || .` | | | |  _| | |    
+| |_| | |___| |  | || || |\  | |_| | |___| |___
+ \____|_____|_|  |_|___|_| \_|\___/|_____|_____|</pre>
+      <p class="welcome-subtitle">&gt; ¿En qué puedo ayudarte hoy?</p>
+      <div class="suggestion-list">
+        <button class="suggestion-card terminal-prompt" data-prompt="Revisa este código y encuentra posibles bugs">
+          <span class="prompt-prefix">~/geminuel &gt;</span>
+          <span class="prompt-text">Encontrar bugs en código</span>
+        </button>
+        <button class="suggestion-card terminal-prompt" data-prompt="Ayúdame a diseñar la arquitectura para una app web escalable">
+          <span class="prompt-prefix">~/geminuel &gt;</span>
+          <span class="prompt-text">Diseño de arquitectura</span>
+        </button>
+        <button class="suggestion-card terminal-prompt" data-prompt="¿Cómo puedo refactorizar esta función para mejorar su rendimiento?">
+          <span class="prompt-prefix">~/geminuel &gt;</span>
+          <span class="prompt-text">Optimizar rendimiento</span>
+        </button>
+        <button class="suggestion-card terminal-prompt" data-prompt="Explícame cómo funciona el algoritmo de Dijkstra paso a paso">
+          <span class="prompt-prefix">~/geminuel &gt;</span>
+          <span class="prompt-text">Explicar un algoritmo</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Messages container -->
+    <div class="messages" id="messages"></div>
+
+  </div>
+
+  <!-- Input area -->
+  <div class="input-area">
+    <div class="input-wrapper">
+      <textarea
+        id="message-input"
+        class="message-input"
+        placeholder="Escribe un mensaje a Geminuel..."
+        rows="1"
+        aria-label="Escribe tu mensaje"
+      ></textarea>
+      <div class="input-actions">
+        <span class="char-counter" id="char-counter"></span>
+        <button class="send-btn" id="send-btn" aria-label="Enviar mensaje" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <p class="input-disclaimer">Geminuel puede cometer errores. Verifica la información importante.</p>
+  </div>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
