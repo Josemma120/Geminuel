@@ -288,48 +288,6 @@ textarea { resize: none; font-family: inherit; }
 .chat-item:hover .chat-item-delete { display: flex; }
 .chat-item-delete:hover { color: #f28b82; background: rgba(242,139,130,0.12); }
 
-/* Footer */
-.sidebar-footer {
-  border-top: 1px solid var(--border);
-  padding: 10px 8px;
-  flex-shrink: 0;
-}
-
-.user-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  color: var(--text-sidebar-muted);
-  transition: background var(--transition), color var(--transition);
-}
-
-.user-btn:hover {
-  background: rgba(255,255,255,0.05);
-  color: var(--text-sidebar);
-}
-
-[data-theme="light"] .user-btn:hover { background: rgba(0,0,0,0.04); }
-
-.avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--gradient);
-  color: #fff;
-  font-size: 0.8rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 0 10px rgba(66,133,244,0.35);
-}
-
-.user-name { font-family: var(--font-mono); font-size: var(--font-size-sm); font-weight: 500; }
-
 /* Overlay (mobile) */
 .sidebar-overlay { display: none; }
 
@@ -388,16 +346,6 @@ textarea { resize: none; font-family: inherit; }
 .topbar-chat-title::before { content: "·"; margin: 0 8px; color: var(--border); }
 
 .topbar-actions { display: flex; gap: 4px; }
-
-.logo-icon {
-  width: 26px;
-  height: 26px;
-  flex-shrink: 0;
-  filter: drop-shadow(0 0 6px rgba(66,133,244,0.5));
-}
-
-.logo-icon circle, .logo-icon path { stroke: url(#logoGradient); }
-.logo-icon.small { width: 20px; height: 20px; }
 
 /* Terminal "G" logo */
 .logo-terminal {
