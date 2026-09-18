@@ -27,7 +27,7 @@ Este sistema está optimizado para:
 
 ## ✨ Características
 
-- 🤖 **Asistente de programación:** Responde con explicaciones, ejemplos de código, correcciones y soluciones paso a paso.
+- 🤖 **Asistente de programación:** Responde con explicaciones, ejemplos de código, correcciones y soluciones paso a paso generadas por la API de Gemini.
 - 💬 **Historial de conversaciones:** Menú lateral discreto para consultar, reanudar o eliminar conversaciones anteriores.
 - 💾 **Persistencia local:** Guarda automáticamente las conversaciones en tu navegador para que nunca pierdas el historial.
 - 🌙 **Modo oscuro / claro:** Alterna la apariencia visual según tus preferencias.
@@ -53,6 +53,8 @@ Este sistema está optimizado para:
 ```
 geminuel/
 ├── index.html        → Interfaz principal
+├── server.js         → Servidor local (proxy de IA) — guarda la clave
+├── .env.example      → Plantilla de configuración (copia a ".env")
 ├── css/
 │   └── style.css     → Estilos de la aplicación
 └── js/
@@ -60,28 +62,45 @@ geminuel/
     └── engine.js     → Motor de respuestas del asistente
 ```
 
-La interfaz (`app.js`) y el motor de respuestas (`engine.js`) están separados. `app.js` solo usa `GeminuelEngine.getResponse(mensaje)` para obtener respuestas, sin conocer los detalles internos de cómo se generan.
+La interfaz (`app.js`) y el motor de respuestas (`engine.js`) están separados. `app.js` solo usa `GeminuelEngine.getResponse(mensaje, historial)` para obtener respuestas, sin conocer los detalles internos de cómo se generan.
 
-> ⚠️ **Nota:** Actualmente el motor responde con respuestas simuladas. En el futuro se conectará a una API real, y ese cambio quedará contenido únicamente en `js/engine.js`.
+> ⚙️ **Respuestas reales:** El motor pide la respuesta al servidor local (`server.js`), que consulta la **API de Gemini** (modelo `gemini-3.6-flash`). Si el servidor no está corriendo o la API falla (sin conexión, límite de cuota, etc.), se usa un respaldo simulado y se muestra un aviso visible en el chat para que no quede como una respuesta real.
+
+---
+
+## 🔑 Clave de la API
+
+- La clave se guarda en un archivo **`.env`** (no se sube al repositorio), en la variable `GEMINI_API_KEY`. Puedes conseguir una gratuita en [Google AI Studio](https://aistudio.google.com/apikey).
+- ⚠️ **Es un secreto:** con este servidor la clave **no viaja en el navegador** ni aparece en el código del frontend. Solo `server.js` la lee desde `.env`.
+- ⚠️ **No subas `.env` al repositorio** (ya está en `.gitignore`). Para usar la app en otra computadora, copia el repositorio **sin** `.env` y crea ahí uno nuevo con `GEMINI_API_KEY`.
+- En AI Studio puedes **restringir el uso** de la clave (a tu proyecto y a tu origen/dominio) para evitar abusos o costos inesperados.
 
 ---
 
 ## 🚀 ¿Cómo ejecutar el proyecto localmente?
 
-### Opción A: Servidor local (recomendado)
+### Prerrequisito
 
-Abre la terminal en la carpeta del proyecto y ejecuta:
+Tener **Node.js 18 o superior** instalado (https://nodejs.org).
+
+### 1. Configurar la clave
+
+En la carpeta del proyecto, copia la plantilla y edítala con tu clave:
 
 ```powershell
-python -m http.server 8000
+Copy-Item .env.example .env
+# Abre ".env" y reemplaza "pon_aqui_tu_clave" por tu GEMINI_API_KEY
+```
+
+### 2. Iniciar el servidor
+
+```powershell
+node server.js
 ```
 
 Luego abre tu navegador e ingresa a: **`http://localhost:8000`**
 
-### Opción B: Abrir directamente el archivo
-
-1. Navega a la carpeta del proyecto en tu explorador de archivos.
-2. Haz doble clic sobre **`index.html`** para abrirlo en cualquier navegador.
+> 💡 **Importante:** ahora la app necesita el servidor local para funcionar (el navegador obtiene respuestas reales en `/api/chat`). Si abres `index.html` con doble clic verás la interfaz, pero el chat usará el respaldo simulado con aviso, porque no hay servidor que responda.
 
 ---
 
@@ -98,6 +117,6 @@ Geminuel puede brindarte ayuda valiosa, pero ten en cuenta:
 
 ## 🗺️ Próximos pasos
 
-- Conectar `js/engine.js` a una API de IA real para generar respuestas reales.
 - Detectar mejor la intención del usuario (lenguaje, nivel de experiencia, tipo de duda).
 - Incluir avisos de incertidumbre cuando la pregunta sea ambigua.
+- Explorar la respuesta en streaming real de la API (`streamGenerateContent`).

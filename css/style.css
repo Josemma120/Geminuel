@@ -690,6 +690,20 @@ textarea { resize: none; font-family: inherit; }
 
 .action-btn.copied { color: #34d399; }
 
+/* API warning (respaldo por fallo de conexión) */
+.api-warning {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: #f8bb86;
+  background: rgba(248, 187, 134, 0.12);
+  border: 1px solid rgba(248, 187, 134, 0.25);
+  border-left: 3px solid #f8bb86;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
 /* Typing indicator */
 .typing-indicator {
   display: flex;

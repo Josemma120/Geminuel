@@ -1,0 +1,8 @@
+# No subir al repositorio: contiene la API key.
+.env
+
+# Dependencias (por si se agregan en el futuro).
+node_modules/
+
+# Logs.
+*.log

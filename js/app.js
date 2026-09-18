@@ -358,7 +358,7 @@ function renderTyping() {
 }
 
 // ---- Stream AI text character by character ----
-async function streamAIResponse(text, typingEl) {
+async function streamAIResponse(text, typingEl, warning) {
   const inner = typingEl.querySelector('.message-inner');
 
   // Replace typing dots with content container
@@ -369,6 +369,7 @@ async function streamAIResponse(text, typingEl) {
       </div>
       <span class="ai-name">Geminuel</span>
     </div>
+    ${warning ? `<div class="api-warning" role="alert">${escapeHtml(warning)}</div>` : ''}
     <div class="ai-content"></div>
     <div class="message-actions">
       <button class="action-btn copy-btn" title="Copiar">
@@ -453,17 +454,13 @@ async function sendMessage(text) {
   const typingEl = renderTyping();
   scrollToBottom();
 
-  // Simulate thinking delay
-  const delay = 800 + Math.random() * 600;
-  await new Promise(r => setTimeout(r, delay));
+  // Get response from the Geminuel engine (Gemini API)
+  const result = await GeminuelEngine.getResponse(text, chat.messages);
 
-  // Get response
-  const response = await GeminuelEngine.getResponse(text);
+  // Stream response (con aviso visible si la API falló)
+  await streamAIResponse(result.text, typingEl, result.ok ? null : result.warning);
 
-  // Stream response
-  await streamAIResponse(response, typingEl);
-
-  chat.messages.push({ role: 'assistant', content: response });
+  chat.messages.push({ role: 'assistant', content: result.text });
   chat.ts = Date.now();
   saveChats();
 
