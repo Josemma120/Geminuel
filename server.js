@@ -44,6 +44,11 @@ loadEnv(path.join(ROOT, '.env'));
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const MODEL = process.env.MODEL || 'gemini-3.6-flash';
 
+// Cuántos mensajes del historial se envían a la API (ventana
+// deslizante). Reduce el consumo de tokens y evita agotar la
+// cuota gratis en conversaciones largas.
+const HISTORY_WINDOW = 12;
+
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 const SYSTEM_PROMPT = `Eres **Geminuel**, un asistente experto en programación.
@@ -56,7 +61,9 @@ Reglas de comportamiento:
 - No solicites ni aceptes información personal o sensible (contraseñas, datos privados).
 - Recomienda que las decisiones importantes sean verificadas por una persona o con documentación oficial antes de confiar en la IA.
 - Aceptas dudas de sintaxis, código con errores, mensajes de error e instrucciones de programas.
-- Usa formato Markdown para tus respuestas (bloques de código con \`\`\`, listas, negritas).`;
+- Usa formato Markdown para tus respuestas (bloques de código con \`\`\`, listas, negritas).
+- Sé CONCISO: responde lo necesario en pocos párrafos; evita rodeos, repeticiones y textos largos. Prioriza ir al grano.
+- Termina SIEMPRE cada respuesta con una conclusión o resumen breve (1-2 frases) que cierre el tema; nunca dejes la respuesta cortada de golpe.`;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -93,7 +100,8 @@ async function callGemini(userMessage, history) {
     .map(m => ({
       role: m.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: m.content }],
-    }));
+    }))
+    .slice(-HISTORY_WINDOW);
 
   if (contents.length === 0) {
     contents.push({ role: 'user', parts: [{ text: userMessage }] });
@@ -102,7 +110,7 @@ async function callGemini(userMessage, history) {
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
     contents,
-    generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+    generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
   });
 
   let res = null;
@@ -132,6 +140,13 @@ async function callGemini(userMessage, history) {
     .trim();
 
   if (!text) throw new Error('Gemini devolvió una respuesta vacía');
+
+  // Si Gemini se quedó sin presupuesto de tokens, avisa para que
+  // la respuesta no parezca truncada de golpe.
+  const finishReason = data.candidates?.[0]?.finishReason;
+  if (finishReason === 'MAX_TOKENS') {
+    return text + '\n\n>[La respuesta se cortó por el límite de longitud. Pregunta la continuación si quieres.]';
+  }
   return text;
 }
 
@@ -164,7 +179,11 @@ const server = http.createServer(async (req, res) => {
         const text = await callGemini(parsed.userMessage, Array.isArray(parsed.history) ? parsed.history : []);
         sendJSON(res, 200, { ok: true, text });
       } catch (err) {
-        sendJSON(res, 502, { ok: false, error: (err && err.message) || 'error desconocido' });
+        const message = (err && err.message) || 'error desconocido';
+        // Propagar el código real para que el cliente muestre el
+        // mensaje de error adecuado (429 = cuota, 503 = saturado).
+        const status = /429/.test(message) ? 429 : (/503/.test(message) ? 503 : 502);
+        sendJSON(res, status, { ok: false, error: message });
       }
     });
     return;

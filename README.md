@@ -64,7 +64,7 @@ geminuel/
 
 La interfaz (`app.js`) y el motor de respuestas (`engine.js`) están separados. `app.js` solo usa `GeminuelEngine.getResponse(mensaje, historial)` para obtener respuestas, sin conocer los detalles internos de cómo se generan.
 
-> ⚙️ **Respuestas reales:** El motor pide la respuesta al servidor local (`server.js`), que consulta la **API de Gemini** (modelo `gemini-3.6-flash`). Si el servidor no está corriendo o la API falla (sin conexión, límite de cuota, etc.), se usa un respaldo simulado y se muestra un aviso visible en el chat para que no quede como una respuesta real.
+> ⚙️ **Respuestas reales:** El motor pide la respuesta al servidor local (`server.js`), que consulta la **API de Gemini** (modelo `gemini-3.6-flash`). Si el servidor no está corriendo o la API falla (sin conexión, límite de cuota, servicio saturado, etc.), la app muestra un **mensaje de error claro** con el detalle técnico en un aviso — nunca inventa una respuesta.
 
 ---
 

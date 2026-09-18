@@ -385,12 +385,12 @@ async function streamAIResponse(text, typingEl, warning) {
 
   // Stream character by character
   let displayed = '';
-  const chunkSize = 3;
+  const chunkSize = 20;
   for (let i = 0; i < text.length; i += chunkSize) {
     displayed += text.slice(i, i + chunkSize);
     contentEl.innerHTML = parseMarkdown(displayed) + '<span class="cursor"></span>';
     scrollToBottom(false);
-    await new Promise(r => setTimeout(r, 18 + Math.random() * 12));
+    await new Promise(r => setTimeout(r, 6 + Math.random() * 6));
   }
 
   // Final render without cursor
@@ -442,7 +442,7 @@ async function sendMessage(text) {
   updateSidebarForTyping();
 
   // Small delay before typing indicator
-  await new Promise(r => setTimeout(r, 300));
+  await new Promise(r => setTimeout(r, 150));
 
   // Show typing indicator
   const typingEl = renderTyping();
@@ -454,7 +454,11 @@ async function sendMessage(text) {
   // Stream response (con aviso visible si la API falló)
   await streamAIResponse(result.text, typingEl, result.ok ? null : result.warning);
 
-  chat.messages.push({ role: 'assistant', content: result.text });
+  // Solo se guarda en el historial una respuesta real; los
+  // mensajes de error no deben ensuciar el contexto de la IA.
+  if (result.ok) {
+    chat.messages.push({ role: 'assistant', content: result.text });
+  }
   chat.ts = Date.now();
   saveChats();
 
