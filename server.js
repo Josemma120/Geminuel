@@ -67,6 +67,21 @@ Reglas de comportamiento:
 - SOLO programación: aceptas únicamente temas relacionados con desarrollo de software, código, arquitectura, algoritmos, errores y herramientas de desarrollo. Si la pregunta NO es de programación (música, deportes, noticias, política, vida personal, etc.), recházala cortésmente explicando que eres un asistente especializado en programación y sugiere reformular la duda hacia ese ámbito. No respondas al contenido fuera de tema.
 - Personalización natural (sin perfiles): si el usuario menciona su nombre, úsalo a partir de ese momento para dirigirte a él. Detecta su nivel de experiencia según sus preguntas y errores, y adapta el nivel de detalle (explica más a principiantes, sé más técnico con avanzados). Mantén un trato cercano y amable, como un mentor.`;
 
+// ==== Red de seguridad de temas (igual que js/engine.js) =====
+// Refuerzo del filtro en el servidor: aunque el navegador tenga
+// cacheada una versión vieja del motor, el servidor bloquea temas
+// ajenos y ahorra cuota.
+const PROGRAMMING_HINTS = /\b(programa\w*|c[oó]digo|code|script|\bhtm\w*|css|javascrip\w*|typescript|node|npm|react|vue|angular|django|flask|python|java)\b|\b(php|ruby|rust|sql|mysql|mongodb|database|base de datos|funci[oó]n|clase|objeto|variable|array|arreglo|algoritmo|recursi\w*|api|fetch|server|servidor|framework|librer\w*a|terminal|git|github|commit|deploy|docker|sintaxis|bug|error|debug|compilar|ejecutar|archivo|token|json|ide|engine|motor de juego|videojue\w*|game\w*|unreal|unity|godot|blender|shader|modelado 3d|fortnite)\b/i;
+
+const OFF_TOPIC_HINTS = /\b(m[úu]sica|canc[ióo]n|album|banda\w*|cantant\w*|deporte\w*|f[úu]tbol|basquet|tenis|equipo deportivo|atleta|noticia\w*|pol[ií]tic\w*|presidente|presidencia|gobierno|partido pol[ií]tic\w*|elecci\w*|vot\w*|candidat\w*|senador|diputad\w*|gobernador|alcalde\w*|econom[ií]a|salario\w*|impuesto\w*|inflaci[oó]n|d[ée]ficit|morena|pri\b|prd\b|pan\b|militar|ej[eé]rcito|guerra\w*|viaje\w*|vacaciones|hotel\w*|playa\w*|receta\w*|cocinar|restaurante\w*|cine|netflix|serie\w*|pel[ií]cula|anime|manga|comic|c[óo]mic\w*|dibujos animados|caricatura\w*|superh[eé]roe|clima|tiempo meteorol\w*|lluvia\w*|novia|novio|amig\w* personal|familia|salud|doctor|enfermedad|cumplea\w*os|hor[oó]scopo|mascota\w*|sue[ñn]os o\w*|religi[oó]n|m[oó]da|ropa\w*|fotograf[ií]a|fotos|sonic\b|flash\b|superman|batman|spiderman|ironman|hulk|thor|avengers|dragon ball|naruto|pok[ée]mon|zelda|mario bros|calabozos y dragones)\b/i;
+
+const OFF_TOPIC_REPLY = 'Ese tema está fuera de mi área. Soy **Geminuel**, un asistente especializado en programación: puedo ayudarte con código, errores, algoritmos, arquitectura, desarrollo de juegos o herramientas de desarrollo. Si reformulas tu duda hacia alguno de esos ámbitos, con gusto te ayudo.';
+
+function isProgrammingTopic(msg) {
+  if (PROGRAMMING_HINTS.test(msg)) return true;
+  return !OFF_TOPIC_HINTS.test(msg);
+}
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -177,6 +192,11 @@ const server = http.createServer(async (req, res) => {
       }
       if (typeof parsed.userMessage !== 'string' || !parsed.userMessage.trim()) {
         return sendJSON(res, 400, { ok: false, error: 'Falta userMessage' });
+      }
+      // Filtro de tema: bloquea lo ajeno ANTES de gastar cuota (y
+      // cubre el caso de que el navegador use un motor cacheado viejo).
+      if (!isProgrammingTopic(parsed.userMessage)) {
+        return sendJSON(res, 200, { ok: true, text: OFF_TOPIC_REPLY });
       }
       try {
         const text = await callGemini(
