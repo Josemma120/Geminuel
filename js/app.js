@@ -369,11 +369,44 @@ function renderTyping() {
         <div class="typing-dot"></div>
         <div class="typing-dot"></div>
       </div>
+      <div class="typing-status" id="typing-status"></div>
     </div>
   `;
   messagesEl.appendChild(el);
   scrollToBottom();
   return el;
+}
+
+// ---- Frases cortas de "cargando" según el tema ----
+function loadingStatus(text) {
+  const t = text.toLowerCase();
+  const m =
+    /python|javascript|typescript|java\b|php|ruby|rust|go\b|c\b/.exec(t) ||
+    /base de datos|sql|mysql|mongodb|database/.exec(t) ||
+    /css|html|frontend|web/.exec(t) ||
+    /algoritmo|recurs|estructura de datos/.exec(t) ||
+    /error|bug|debug|excepci\w*/.exec(t) ||
+    /arquitectura|microservicio|escalab/.exec(t);
+
+  const generic = [
+    'analizando tu consulta',
+    'consultando la matriz',
+    'pensando en cinco',
+    'sintetizando respuesta',
+    'procesando petición',
+    'revisando kilobits',
+  ];
+
+  if (!m) return generic;
+
+  const topic = m[0];
+  return [
+    `procesando ${topic}`,
+    `compilando ${topic}`,
+    `corrigiendo ${topic}`,
+    `analizando ${topic}`,
+    ...generic.slice(2),
+  ];
 }
 
 // ---- Stream AI text character by character ----
@@ -471,10 +504,21 @@ async function sendMessage(text) {
 
   // Show typing indicator
   const typingEl = renderTyping();
-  scrollToBottom();
+
+  // Rotar frases de "cargando" para que no parezca inactivo
+  const statusEl = typingEl.querySelector('#typing-status');
+  const statuses = loadingStatus(text);
+  let statusIdx = 0;
+  if (statusEl) statusEl.textContent = statuses[statusIdx];
+  const statusTimer = setInterval(() => {
+    if (!statusEl) return;
+    statusEl.textContent = statuses[++statusIdx % statuses.length];
+  }, 1500);
 
   // Get response from the Geminuel engine (Gemini API)
   const result = await GeminuelEngine.getResponse(text, chat.messages);
+
+  clearInterval(statusTimer);
 
   // Stream response (con aviso visible si la API falló)
   await streamAIResponse(result.text, typingEl, result.ok ? null : result.warning);
