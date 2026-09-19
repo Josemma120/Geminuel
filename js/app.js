@@ -38,6 +38,7 @@ const newChatBtn      = document.getElementById('new-chat-btn');
 const chatList        = document.getElementById('chat-list');
 const chatListEmpty   = document.getElementById('chat-list-empty');
 const topbarChatTitle = document.getElementById('topbar-chat-title');
+const welcomeSubtitle = document.getElementById('welcome-subtitle');
 
 // ---- Storage helpers ----
 function loadChats() {
@@ -69,6 +70,30 @@ function applyTheme() {
   themeIconDark.style.display  = state.isDark ? 'none' : '';
   themeIconLight.style.display = state.isDark ? '' : 'none';
 }
+
+// ---- Saludo según la hora (sin perfiles) ----
+function setTimeGreeting() {
+  const h = new Date().getHours();
+  const saludo = h >= 6 && h < 12 ? 'Buenos días' : h >= 12 && h < 19 ? 'Buenas tardes' : 'Buenas noches';
+  welcomeSubtitle.textContent = `> ${saludo}, ¿en qué puedo ayudarte hoy?`;
+}
+
+// ---- Detalle geek sutil en la bienvenida ----
+const GEEK_LINES = [
+  'follow the white rabbit',
+  'hay pastillas rojas y azules',
+  'hay plano y no hay plano',
+  'elegiste la píldora correcta',
+  'el sistema te vigila… me refiero a que te recuerda',
+];
+const welcomeGeek = document.getElementById('welcome-geek');
+let geekIdx = 0;
+function tickGeek() {
+  if (!welcomeGeek) return;
+  welcomeGeek.textContent = GEEK_LINES[geekIdx++ % GEEK_LINES.length];
+}
+tickGeek();
+setInterval(tickGeek, 6000);
 
 // ---- Chat helpers ----
 function currentChat() {
@@ -509,6 +534,7 @@ themeToggle.addEventListener('click', () => {
 // ---- Init ----
 loadTheme();
 applyTheme();
+setTimeGreeting();
 if (isMobile()) hideSidebar();
 renderChatList();
 updateSidebarForTyping();

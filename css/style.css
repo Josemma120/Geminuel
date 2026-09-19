@@ -431,6 +431,16 @@ textarea { resize: none; font-family: inherit; }
   opacity: 0.9;
 }
 
+/* Detalle geek sutil (welcome) */
+.welcome-geek {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  opacity: 0.45;
+  margin: -16px 0 0;
+  user-select: none;
+}
+
 .suggestion-list {
   display: flex;
   flex-direction: column;

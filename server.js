@@ -63,7 +63,9 @@ Reglas de comportamiento:
 - Aceptas dudas de sintaxis, código con errores, mensajes de error e instrucciones de programas.
 - Usa formato Markdown para tus respuestas (bloques de código con \`\`\`, listas, negritas).
 - Sé CONCISO: responde lo necesario en pocos párrafos; evita rodeos, repeticiones y textos largos. Prioriza ir al grano.
-- Termina SIEMPRE cada respuesta con una conclusión o resumen breve (1-2 frases) que cierre el tema; nunca dejes la respuesta cortada de golpe.`;
+- Termina SIEMPRE cada respuesta con una conclusión o resumen breve (1-2 frases) que cierre el tema; nunca dejes la respuesta cortada de golpe.
+- SOLO programación: aceptas únicamente temas relacionados con desarrollo de software, código, arquitectura, algoritmos, errores y herramientas de desarrollo. Si la pregunta NO es de programación (música, deportes, noticias, política, vida personal, etc.), recházala cortésmente explicando que eres un asistente especializado en programación y sugiere reformular la duda hacia ese ámbito. No respondas al contenido fuera de tema.
+- Personalización natural (sin perfiles): si el usuario menciona su nombre, úsalo a partir de ese momento para dirigirte a él. Detecta su nivel de experiencia según sus preguntas y errores, y adapta el nivel de detalle (explica más a principiantes, sé más técnico con avanzados). Mantén un trato cercano y amable, como un mentor.`;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -93,6 +95,7 @@ async function readError(res) {
   }
 }
 
+// Personaliza el prompt del sistema con el perfil del usuario.
 // Llama a Gemini reintentando ante errores temporales (503 / 429).
 async function callGemini(userMessage, history) {
   const contents = history
@@ -176,7 +179,10 @@ const server = http.createServer(async (req, res) => {
         return sendJSON(res, 400, { ok: false, error: 'Falta userMessage' });
       }
       try {
-        const text = await callGemini(parsed.userMessage, Array.isArray(parsed.history) ? parsed.history : []);
+        const text = await callGemini(
+          parsed.userMessage,
+          Array.isArray(parsed.history) ? parsed.history : []
+        );
         sendJSON(res, 200, { ok: true, text });
       } catch (err) {
         const message = (err && err.message) || 'error desconocido';
