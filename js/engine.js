@@ -23,22 +23,29 @@ window.GeminuelEngine = (() => {
   const ERROR_DEFAULT = 'Ocurrió un error al generar la respuesta. Verifica que `node server.js` esté corriendo y revisa la consola (F12).';
 
   // ==== 2. Filtro de tema (solo programación) ============
-  // Estrategia conservadora: se rechaza SIN llamar a la API solo
-  // cuando el mensaje es claramente ajeno a programación. Ante la
-  // duda, el mensaje pasa a Gemini, que aplica la regla con
-  // criterio (y evita rechazos falsos como "Unreal Engine" o
-  // "hola").
-  const PROGRAMMING_HINTS = /\b(programa\w*|c[oó]digo|code|script|\bhtm\w*|css|javascrip\w*|typescript|node|npm|react|vue|angular|django|flask|python|java)\b|\b(php|ruby|rust|sql|mysql|mongodb|database|base de datos|funci[oó]n|clase|objeto|variable|array|arreglo|algoritmo|recursi\w*|api|fetch|server|servidor|framework|librer\w*a|terminal|git|github|commit|deploy|docker|sintaxis|bug|error|debug|compilar|ejecutar|archivo|token|json|ide|engine|motor de juego|videojue\w*|game\w*|unreal|unity|godot|blender|shader|modelado 3d|fortnite)\b/i;
+  // Modo ESTRICTO: solo pasan los mensajes con pista clara de
+  // programación (PROGRAMMING_HINTS) o los saludos/agradecimientos
+  // (GREETINGS). Lo claramente ajeno (OFF_TOPIC_HINTS) y lo
+  // ambiguo/sin señales se rechaza SIN llamar a la API.
+  const PROGRAMMING_HINTS = /\b(programa\w*|c[oó]digo|code|script|cod[eé]|\bhtm\w*|css|javascrip\w*|typescript|node|npm|react|vue|angular|django|flask|python|java)\b|\b(php|ruby|rust|sql|mysql|mongodb|database|base de datos|funci[oó]n|clase|objeto|variable|array|arreglo|algoritmo|recursi\w*|api|fetch|server|servidor|framework|librer\w*a|terminal|git|github|commit|deploy|docker|sintaxis|bug|error|debug|compilar|ejecutar|archivo|token|json|ide|engine|motor de juego|videojue\w*|\bjuego\b|game\w*|unreal|unity|godot|blender|shader|modelado 3d|fortnite|\bapp\w*|\bsitio\b|\bweb\b|frontend|backend|\bp[áa]gina\w*|pantalla\b|\bbot[óo]n\b|interfaz\b|\bproyecto\b|\bdise[ñn]o\b|responsive|estilos\b|instalar\b|configurar\b|importar\b|exportar\b|consultar\b|CRUD|registro\w*|depurar|debuggear|clonar\b|\brama\w*|\bpull\b|\bpush\b|branch|merge\b|issues\b|arquitectura|escalab\w*|rendimiento\b|optimiz\w*)\b/i;
 
   const OFF_TOPIC_HINTS = /\b(m[úu]sica|canc[ióo]n|album|banda\w*|cantant\w*|deporte\w*|f[úu]tbol|basquet|tenis|equipo deportivo|atleta|noticia\w*|pol[ií]tic\w*|presidente|presidencia|gobierno|partido pol[ií]tic\w*|elecci\w*|vot\w*|candidat\w*|senador|diputad\w*|gobernador|alcalde\w*|econom[ií]a|salario\w*|impuesto\w*|inflaci[oó]n|d[ée]ficit|morena|pri\b|prd\b|pan\b|militar|ej[eé]rcito|guerra\w*|viaje\w*|vacaciones|hotel\w*|playa\w*|receta\w*|cocinar|restaurante\w*|cine|netflix|serie\w*|pel[ií]cula|anime|manga|comic|c[óo]mic\w*|dibujos animados|caricatura\w*|superh[eé]roe|clima|tiempo meteorol\w*|lluvia\w*|novia|novio|amig\w* personal|familia|salud|doctor|enfermedad|cumplea\w*os|hor[oó]scopo|mascota\w*|sue[ñn]os o\w*|religi[oó]n|m[oó]da|ropa\w*|fotograf[ií]a|fotos|sonic\b|flash\b|superman|batman|spiderman|ironman|hulk|thor|avengers|dragon ball|naruto|pok[ée]mon|zelda|mario bros|calabozos y dragones)\b/i;
 
   const OFF_TOPIC_REPLY = 'Ese tema está fuera de mi área. Soy **Geminuel**, un asistente especializado en programación: puedo ayudarte con código, errores, algoritmos, arquitectura, desarrollo de juegos o herramientas de desarrollo. Si reformulas tu duda hacia alguno de esos ámbitos, con gusto te ayudo.';
 
-  // Devuelve true si el mensaje DEBE pasar al motor (parece de
-  // programación o no es claramente ajeno).
+  const AMBIGUOUS_REPLY = 'Tu pregunta no deja claro si es de programación. Soy **Geminuel**, un asistente especializado en desarrollo de software: si me cuentas qué estás intentando (qué lenguaje usas, qué error te sale o qué quieres construir), con gusto te ayudo.';
+
+  // Saludos y agradecimientos: pasan a Gemini pero como cortesía
+  // simple, no para responder contenido ajeno.
+  const GREETINGS = /\b(hola|buenos d[ií]as|buenas tardes|buenas noches|hey|qu[eé] tal|saludos|gracias|muchas gracias|ok\b|s[ií]\b|perfecto|entendido|listo|de nada)\b/i;
+
+  // Devuelve true si el mensaje DEBE pasar al motor: tiene pista
+  // clara de programación o es un saludo breve. Todo lo demás
+  // (ajeno u ambiguo) se rechaza.
   function isProgrammingTopic(msg) {
     if (PROGRAMMING_HINTS.test(msg)) return true;
-    return !OFF_TOPIC_HINTS.test(msg);
+    if (OFF_TOPIC_HINTS.test(msg)) return false;
+    return GREETINGS.test(msg);
   }
 
   // ==== 3. Cliente del servidor local ======================
@@ -81,9 +88,11 @@ window.GeminuelEngine = (() => {
     //   ok=false → hubo error; text es un mensaje de error claro
     //              y warning trae el detalle técnico.
     async getResponse(userMessage, history = []) {
-      // Tema fuera de programación: se rechaza sin llamar a la API.
+      // Fuera de programación: se rechaza sin llamar a la API.
+      // Mensaje distinto según sea tema ajeno o ambiguo.
       if (!isProgrammingTopic(userMessage)) {
-        return { ok: true, text: OFF_TOPIC_REPLY };
+        const text = OFF_TOPIC_HINTS.test(userMessage) ? OFF_TOPIC_REPLY : AMBIGUOUS_REPLY;
+        return { ok: true, text };
       }
 
       try {
