@@ -1,15 +1,15 @@
 // ============================================================
 //  Geminuel — Interfaz (lógica de UI)
-//  ============================================================
+// ============================================================
 //  Maneja DOM, estado de conversaciones y renderizado.
+//  La persistencia de chats se gestiona en el servidor Python
+//  a través de la API REST (/api/chats).
 //  Las respuestas del asistente se obtienen desde el motor
-//  (js/engine.js) a través de  GeminuelEngine.getResponse().
+//  (js/engine.js) a través de GeminuelEngine.getResponse().
 // ============================================================
 
 // ---- Constants ----
-const STORAGE_KEY  = 'geminuel.chats.v1';
-const THEME_KEY    = 'geminuel.theme';
-const PROVIDER_KEY = 'geminuel.provider';
+const THEME_KEY = 'geminuel.theme';
 
 // ---- State ----
 const state = {
@@ -17,10 +17,8 @@ const state = {
   isTyping: false,
   chats: [],
   currentChatId: null,
-  nextChatId: 2,
   provider: 'cascade',
 };
-state.chats = loadChats();
 
 // ---- DOM References ----
 const chatArea        = document.getElementById('chat-area');
@@ -48,27 +46,49 @@ const xboxStatusText   = document.getElementById('xbox-status-text');
 const replaySplashBtn  = document.getElementById('replay-splash-btn');
 const topbarTitle      = document.getElementById('topbar-title');
 
-// ---- Storage helpers ----
-function loadChats() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    const chats = parsed.filter(c => c && typeof c.title === 'string' && Array.isArray(c.messages));
-    let maxId = 0;
-    for (const c of chats) maxId = Math.max(maxId, Number(c.id) || 0);
-    state.nextChatId = maxId + 1;
-    return chats;
-  } catch {
-    return [];
-  }
+// ---- REST API Helpers ----
+async function apiGet(path) {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error(`API error ${r.status}`);
+  return r.json();
 }
 
-function saveChats() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.chats)); } catch {}
+async function apiPost(path, body) {
+  const r = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`API error ${r.status}`);
+  return r.json();
 }
 
+async function apiDelete(path) {
+  const r = await fetch(path, { method: 'DELETE' });
+  if (!r.ok) throw new Error(`API error ${r.status}`);
+  return r.json();
+}
+
+// ---- Chat API ----
+async function fetchChats() {
+  const data = await apiGet('/api/chats');
+  return data.chats || [];
+}
+
+async function createChatAPI(title) {
+  const data = await apiPost('/api/chats', { title });
+  return data.chat;
+}
+
+async function addMessageAPI(chatId, role, content, provider = null, cascaded = false) {
+  return apiPost(`/api/chats/${chatId}/messages`, { role, content, provider, cascaded });
+}
+
+async function deleteChatAPI(chatId) {
+  return apiDelete(`/api/chats/${chatId}`);
+}
+
+// ---- Theme ----
 function loadTheme() {
   try { state.isDark = localStorage.getItem(THEME_KEY) !== 'light'; } catch {}
 }
@@ -77,10 +97,6 @@ function applyTheme() {
   document.documentElement.setAttribute('data-theme', state.isDark ? '' : 'light');
   themeIconDark.style.display  = state.isDark ? 'none' : '';
   themeIconLight.style.display = state.isDark ? '' : 'none';
-}
-
-function loadProvider() {
-  state.provider = 'cascade';
 }
 
 function setProvider() {
@@ -266,8 +282,12 @@ async function deleteChat(id) {
 
   if (!confirmed) return;
 
+  try {
+    await deleteChatAPI(id);
+  } catch (e) {
+    console.error('[Geminuel] Error eliminando chat del servidor:', e);
+  }
   state.chats = state.chats.filter(c => c.id !== id);
-  saveChats();
   if (state.currentChatId === id) {
     startNewChat();
   } else {
@@ -456,22 +476,26 @@ async function sendMessage(text) {
   text = text.trim();
   if (!text || state.isTyping) return;
 
-  // Create a new chat if none is active
+  // Crear chat nuevo en el servidor si no hay uno activo
   if (state.currentChatId === null) {
-    const chat = {
-      id: state.nextChatId++,
-      title: makeTitle(text),
-      messages: [],
-      ts: Date.now(),
-    };
-    state.chats.push(chat);
-    state.currentChatId = chat.id;
+    try {
+      const newChat = await createChatAPI(makeTitle(text));
+      state.chats.push(newChat);
+      state.currentChatId = newChat.id;
+    } catch (e) {
+      console.error('[Geminuel] Error creando chat en el servidor:', e);
+      return;
+    }
   }
 
   const chat = currentChat();
   chat.ts = Date.now();
   chat.messages.push({ role: 'user', content: text });
-  saveChats();
+
+  // Persiste mensaje del usuario (fire-and-forget)
+  addMessageAPI(state.currentChatId, 'user', text).catch(e =>
+    console.warn('[Geminuel] Error guardando mensaje de usuario:', e)
+  );
 
   // Hide welcome screen
   welcomeScreen.style.display = 'none';
@@ -513,9 +537,11 @@ async function sendMessage(text) {
       role: 'assistant',
       content: result.text,
     });
+    // Persiste respuesta del asistente (fire-and-forget)
+    addMessageAPI(state.currentChatId, 'assistant', result.text, result.provider, result.cascaded)
+      .catch(e => console.warn('[Geminuel] Error guardando respuesta del asistente:', e));
   }
   chat.ts = Date.now();
-  saveChats();
 
   state.isTyping = false;
   sendBtn.disabled = inputEl.value.trim() === '';
@@ -805,20 +831,30 @@ function initConfirmModal() {
 }
 
 // ---- Init ----
-loadTheme();
-applyTheme();
-loadProvider();
-setProvider();
-if (isMobile()) hideSidebar();
-renderChatList();
-updateSidebarForTyping();
-initXboxSplash();
-initConfirmModal();
+(async function init() {
+  loadTheme();
+  applyTheme();
+  setProvider();
+  if (isMobile()) hideSidebar();
+  initXboxSplash();
+  initConfirmModal();
 
-const latest = [...state.chats].sort((a, b) => (b.ts || 0) - (a.ts || 0))[0];
-if (latest) {
-  openChat(latest.id);
-} else {
-  startNewChat();
-}
-inputEl.focus();
+  // Cargar chats desde el servidor Python
+  try {
+    state.chats = await fetchChats();
+  } catch (e) {
+    console.warn('[Geminuel] No se pudieron cargar los chats del servidor:', e);
+    state.chats = [];
+  }
+
+  renderChatList();
+  updateSidebarForTyping();
+
+  const latest = [...state.chats].sort((a, b) => (b.ts || 0) - (a.ts || 0))[0];
+  if (latest) {
+    openChat(latest.id);
+  } else {
+    startNewChat();
+  }
+  inputEl.focus();
+})();

@@ -1,8 +1,16 @@
 # No subir al repositorio: contiene la API key.
 .env
 
-# Dependencias (por si se agregan en el futuro).
+# Historial de chats (datos personales del usuario).
+chats.json
+
+# Dependencias Node.
 node_modules/
+
+# Caché de Python.
+__pycache__/
+*.pyc
+*.pyo
 
 # Logs.
 *.log
