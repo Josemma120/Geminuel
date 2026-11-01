@@ -42,14 +42,17 @@ function loadEnv(filePath) {
 loadEnv(path.join(ROOT, '.env'));
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const MODEL = process.env.MODEL || 'gemini-3.6-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || process.env.MODEL || 'gemini-3.6-flash';
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+const GROQ_API_KEY = process.env.GROQ_API_KEY || process.env.DEEPSEEK_API_KEY;
+const GROQ_MODEL = process.env.GROQ_MODEL || 'deepseek-r1-distill-llama-70b';
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 // Cuántos mensajes del historial se envían a la API (ventana
 // deslizante). Reduce el consumo de tokens y evita agotar la
-// cuota gratis en conversaciones largas.
+// cuota en conversaciones largas.
 const HISTORY_WINDOW = 12;
-
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 const SYSTEM_PROMPT = `Eres **Geminuel**, un asistente experto en programación.
 
@@ -63,31 +66,7 @@ Reglas de comportamiento:
 - Aceptas dudas de sintaxis, código con errores, mensajes de error e instrucciones de programas.
 - Usa formato Markdown para tus respuestas (bloques de código con \`\`\`, listas, negritas).
 - Sé CONCISO: responde lo necesario en pocos párrafos; evita rodeos, repeticiones y textos largos. Prioriza ir al grano.
-- Termina SIEMPRE cada respuesta con una conclusión o resumen breve (1-2 frases) que cierre el tema; nunca dejes la respuesta cortada de golpe.
-- SOLO programación: aceptas únicamente temas relacionados con desarrollo de software, código, arquitectura, algoritmos, errores y herramientas de desarrollo. Si la pregunta NO es de programación (música, deportes, noticias, política, vida personal, etc.), recházala cortésmente explicando que eres un asistente especializado en programación y sugiere reformular la duda hacia ese ámbito. No respondas al contenido fuera de tema.
-- Ante la duda sobre si un tema es de programación, NO respondas su contenido: pide al usuario reformular su duda enfocándola en un aspecto técnico concreto (lenguaje, código, error u objetivo de desarrollo).
-- Nunca respondas el contenido real de temas ajenos (chistes, opiniones políticas o económicas, entretenimiento, vida personal, cultura general) aunque estén disfrazados de peticiones de "código" o "programa".
-- Personalización natural (sin perfiles): si el usuario menciona su nombre, úsalo a partir de ese momento para dirigirte a él. Detecta su nivel de experiencia según sus preguntas y errores, y adapta el nivel de detalle (explica más a principiantes, sé más técnico con avanzados). Mantén un trato cercano y amable, como un mentor.`;
-
-// ==== Red de seguridad de temas (igual que js/engine.js) =====
-// Refuerzo del filtro en el servidor: aunque el navegador tenga
-// cacheada una versión vieja del motor, el servidor bloquea temas
-// ajenos y ahorra cuota.
-const PROGRAMMING_HINTS = /\b(programa\w*|c[oó]digo|code|script|cod[eé]|\bhtm\w*|css|javascrip\w*|typescript|node|npm|react|vue|angular|django|flask|python|java)\b|\b(php|ruby|rust|sql|mysql|mongodb|database|base de datos|funci[oó]n|clase|objeto|variable|array|arreglo|algoritmo|recursi\w*|api|fetch|server|servidor|framework|librer\w*a|terminal|git|github|commit|deploy|docker|sintaxis|bug|error|debug|compilar|ejecutar|archivo|token|json|ide|engine|motor de juego|videojue\w*|\bjuego\b|game\w*|unreal|unity|godot|blender|shader|modelado 3d|fortnite|\bapp\w*|\bsitio\b|\bweb\b|frontend|backend|\bp[áa]gina\w*|pantalla\b|\bbot[óo]n\b|interfaz\b|\bproyecto\b|\bdise[ñn]o\b|responsive|estilos\b|instalar\b|configurar\b|importar\b|exportar\b|consultar\b|CRUD|registro\w*|depurar|debuggear|clonar\b|\brama\w*|\bpull\b|\bpush\b|branch|merge\b|issues\b|arquitectura|escalab\w*|rendimiento\b|optimiz\w*)\b/i;
-
-const OFF_TOPIC_HINTS = /\b(m[úu]sica|canc[ióo]n|album|banda\w*|cantant\w*|deporte\w*|f[úu]tbol|basquet|tenis|equipo deportivo|atleta|noticia\w*|pol[ií]tic\w*|presidente|presidencia|gobierno|partido pol[ií]tic\w*|elecci\w*|vot\w*|candidat\w*|senador|diputad\w*|gobernador|alcalde\w*|econom[ií]a|salario\w*|impuesto\w*|inflaci[oó]n|d[ée]ficit|morena|pri\b|prd\b|pan\b|militar|ej[eé]rcito|guerra\w*|viaje\w*|vacaciones|hotel\w*|playa\w*|receta\w*|cocinar|restaurante\w*|cine|netflix|serie\w*|pel[ií]cula|anime|manga|comic|c[óo]mic\w*|dibujos animados|caricatura\w*|superh[eé]roe|clima|tiempo meteorol\w*|lluvia\w*|novia|novio|amig\w* personal|familia|salud|doctor|enfermedad|cumplea\w*os|hor[oó]scopo|mascota\w*|sue[ñn]os o\w*|religi[oó]n|m[oó]da|ropa\w*|fotograf[ií]a|fotos|sonic\b|flash\b|superman|batman|spiderman|ironman|hulk|thor|avengers|dragon ball|naruto|pok[ée]mon|zelda|mario bros|calabozos y dragones)\b/i;
-
-const OFF_TOPIC_REPLY = 'Ese tema está fuera de mi área. Soy **Geminuel**, un asistente especializado en programación: puedo ayudarte con código, errores, algoritmos, arquitectura, desarrollo de juegos o herramientas de desarrollo. Si reformulas tu duda hacia alguno de esos ámbitos, con gusto te ayudo.';
-
-const AMBIGUOUS_REPLY = 'Tu pregunta no deja claro si es de programación. Soy **Geminuel**, un asistente especializado en desarrollo de software: si me cuentas qué estás intentando (qué lenguaje usas, qué error te sale o qué quieres construir), con gusto te ayudo.';
-
-const GREETINGS = /\b(hola|buenos d[ií]as|buenas tardes|buenas noches|hey|qu[eé] tal|saludos|gracias|muchas gracias|ok\b|s[ií]\b|perfecto|entendido|listo|de nada)\b/i;
-
-function isProgrammingTopic(msg) {
-  if (PROGRAMMING_HINTS.test(msg)) return true;
-  if (OFF_TOPIC_HINTS.test(msg)) return false;
-  return GREETINGS.test(msg);
-}
+- Termina SIEMPRE cada respuesta con una conclusión o resumen breve (1-2 frases) que cierre el tema; nunca dejes la respuesta cortada de golpe.`;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -117,7 +96,6 @@ async function readError(res) {
   }
 }
 
-// Personaliza el prompt del sistema con el perfil del usuario.
 // Llama a Gemini reintentando ante errores temporales (503 / 429).
 async function callGemini(userMessage, history) {
   const contents = history
@@ -140,7 +118,7 @@ async function callGemini(userMessage, history) {
 
   let res = null;
   for (let attempt = 1; attempt <= 3; attempt++) {
-    res = await fetch(`${API_URL}?key=${GEMINI_API_KEY}`, {
+    res = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
@@ -175,15 +153,139 @@ async function callGemini(userMessage, history) {
   return text;
 }
 
+// Llama a Groq Cloud (ejecutando DeepSeek R1) con reintentos automáticos.
+async function callGroq(userMessage, history) {
+  if (!GROQ_API_KEY) {
+    throw new Error('Falta configurar GROQ_API_KEY en .env. Consíguela 100% gratis en https://console.groq.com/keys');
+  }
+
+  const messages = [
+    { role: 'system', content: SYSTEM_PROMPT },
+  ];
+
+  const recentHistory = history
+    .filter(m => m && typeof m.content === 'string' && m.content.trim() !== '')
+    .slice(-HISTORY_WINDOW);
+
+  for (const m of recentHistory) {
+    messages.push({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content,
+    });
+  }
+
+  const lastMsg = messages[messages.length - 1];
+  if (!lastMsg || lastMsg.role !== 'user' || lastMsg.content !== userMessage) {
+    messages.push({ role: 'user', content: userMessage });
+  }
+
+  const body = JSON.stringify({
+    model: GROQ_MODEL,
+    messages,
+    temperature: 0.6,
+    max_tokens: 4096,
+  });
+
+  let res = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    res = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+      },
+      body,
+    });
+
+    if (res.status === 503 || res.status === 429) {
+      await new Promise(r => setTimeout(r, 700 * attempt));
+      continue;
+    }
+    break;
+  }
+
+  if (!res.ok) {
+    const detail = await readError(res);
+    throw new Error(`Groq API error ${res.status}: ${detail || res.statusText || 'error desconocido'}`);
+  }
+
+  const data = await res.json();
+  const choice = data.choices?.[0];
+  const text = (choice?.message?.content || '').trim();
+
+  if (!text) throw new Error('Groq devolvió una respuesta vacía');
+
+  if (choice?.finish_reason === 'length') {
+    return text + '\n\n>[La respuesta se cortó por el límite de tokens. Pide la continuación si lo deseas.]';
+  }
+  return text;
+}
+
+// Ejecuta la cascada inteligente: 1° Groq (DeepSeek R1) -> 2° Gemini (Respaldo automático)
+async function callCascade(userMessage, history) {
+  const errors = [];
+
+  // Intento 1: Groq Cloud (DeepSeek R1)
+  if (GROQ_API_KEY) {
+    try {
+      const text = await callGroq(userMessage, history);
+      return { text, provider: 'groq', cascaded: false };
+    } catch (err) {
+      const msg = (err && err.message) || 'Error en Groq';
+      console.warn('[Cascada] Groq no disponible:', msg);
+      errors.push(`Groq (${GROQ_MODEL}): ${msg}`);
+    }
+  } else {
+    errors.push('Groq: No se encontró GROQ_API_KEY en .env');
+  }
+
+  // Intento 2: Google Gemini (Respaldo automático)
+  if (GEMINI_API_KEY) {
+    try {
+      const text = await callGemini(userMessage, history);
+      const isFallback = errors.length > 0;
+      return {
+        text,
+        provider: 'gemini',
+        cascaded: isFallback,
+        fallbackReason: isFallback ? errors[0] : null,
+      };
+    } catch (err) {
+      const msg = (err && err.message) || 'Error en Gemini';
+      console.warn('[Cascada] Gemini no disponible:', msg);
+      errors.push(`Gemini (${GEMINI_MODEL}): ${msg}`);
+    }
+  } else {
+    errors.push('Gemini: No se encontró GEMINI_API_KEY en .env');
+  }
+
+  // Si ambos fallaron
+  throw new Error(
+    `No se pudo obtener respuesta del servicio de IA:\n• ${errors[0] || 'Servicio primario falló'}\n• ${errors[1] || 'Servicio de respaldo falló'}`
+  );
+}
+
 // ---- Servidor ----
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const pathname = decodeURIComponent(url.pathname);
 
-  // Endpoint de chat (proxy hacia Gemini)
+  // Endpoint de estado y proveedores disponibles
+  if (pathname === '/api/providers') {
+    if (req.method !== 'GET') return sendJSON(res, 405, { ok: false, error: 'Método no permitido' });
+    return sendJSON(res, 200, {
+      ok: true,
+      cascadeOrder: ['groq', 'gemini'],
+      providers: {
+        groq: { configured: Boolean(GROQ_API_KEY), model: GROQ_MODEL, role: 'primary' },
+        gemini: { configured: Boolean(GEMINI_API_KEY), model: GEMINI_MODEL, role: 'fallback' },
+      },
+    });
+  }
+
+  // Endpoint de chat (cascada automática por defecto)
   if (pathname === '/api/chat') {
     if (req.method !== 'POST') return sendJSON(res, 405, { ok: false, error: 'Método no permitido' });
-    if (!GEMINI_API_KEY) return sendJSON(res, 500, { ok: false, error: 'Falta GEMINI_API_KEY en .env' });
 
     let body = '';
     req.on('data', c => {
@@ -200,22 +302,32 @@ const server = http.createServer(async (req, res) => {
       if (typeof parsed.userMessage !== 'string' || !parsed.userMessage.trim()) {
         return sendJSON(res, 400, { ok: false, error: 'Falta userMessage' });
       }
-      // Filtro de tema: bloquea lo ajeno ANTES de gastar cuota (y
-      // cubre el caso de que el navegador use un motor cacheado viejo).
-      if (!isProgrammingTopic(parsed.userMessage)) {
-        const text = OFF_TOPIC_HINTS.test(parsed.userMessage) ? OFF_TOPIC_REPLY : AMBIGUOUS_REPLY;
-        return sendJSON(res, 200, { ok: true, text });
-      }
+
+      const mode = parsed.provider || 'cascade';
+      const history = Array.isArray(parsed.history) ? parsed.history : [];
+
       try {
-        const text = await callGemini(
-          parsed.userMessage,
-          Array.isArray(parsed.history) ? parsed.history : []
-        );
-        sendJSON(res, 200, { ok: true, text });
+        let result;
+        if (mode === 'groq') {
+          const text = await callGroq(parsed.userMessage, history);
+          result = { text, provider: 'groq', cascaded: false };
+        } else if (mode === 'gemini') {
+          const text = await callGemini(parsed.userMessage, history);
+          result = { text, provider: 'gemini', cascaded: false };
+        } else {
+          // Cascada automática unificada
+          result = await callCascade(parsed.userMessage, history);
+        }
+
+        sendJSON(res, 200, {
+          ok: true,
+          text: result.text,
+          provider: result.provider,
+          cascaded: Boolean(result.cascaded),
+          fallbackReason: result.fallbackReason || null,
+        });
       } catch (err) {
         const message = (err && err.message) || 'error desconocido';
-        // Propagar el código real para que el cliente muestre el
-        // mensaje de error adecuado (429 = cuota, 503 = saturado).
         const status = /429/.test(message) ? 429 : (/503/.test(message) ? 503 : 502);
         sendJSON(res, status, { ok: false, error: message });
       }
@@ -238,6 +350,8 @@ const server = http.createServer(async (req, res) => {
   }
   if (pathname === '/' || !path.extname(target)) {
     target = path.join(target, 'index.html');
+  } else if (pathname === '/favicon.ico' && !fs.existsSync(target)) {
+    target = path.join(ROOT, 'favicon.svg');
   }
 
   fs.readFile(target, (err, data) => {
@@ -254,7 +368,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Geminuel corriendo en http://localhost:${PORT}`);
-  if (!GEMINI_API_KEY) {
-    console.log('AVISO: crea el archivo .env con GEMINI_API_KEY (ver .env.example) para activar la IA.');
-  }
+  console.log(`Modo: Cascada de Respaldo Automática (Groq [DeepSeek R1] -> Google Gemini)`);
+  console.log(` - 1° Groq:   ${GROQ_API_KEY ? `Listo (${GROQ_MODEL})` : 'Sin clave en .env (GROQ_API_KEY)'}`);
+  console.log(` - 2° Gemini: ${GEMINI_API_KEY ? `Listo (${GEMINI_MODEL})` : 'Sin clave en .env (GEMINI_API_KEY)'}`);
 });

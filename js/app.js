@@ -7,8 +7,9 @@
 // ============================================================
 
 // ---- Constants ----
-const STORAGE_KEY = 'geminuel.chats.v1';
-const THEME_KEY   = 'geminuel.theme';
+const STORAGE_KEY  = 'geminuel.chats.v1';
+const THEME_KEY    = 'geminuel.theme';
+const PROVIDER_KEY = 'geminuel.provider';
 
 // ---- State ----
 const state = {
@@ -17,6 +18,7 @@ const state = {
   chats: [],
   currentChatId: null,
   nextChatId: 2,
+  provider: 'cascade',
 };
 state.chats = loadChats();
 
@@ -38,7 +40,13 @@ const newChatBtn      = document.getElementById('new-chat-btn');
 const chatList        = document.getElementById('chat-list');
 const chatListEmpty   = document.getElementById('chat-list-empty');
 const topbarChatTitle = document.getElementById('topbar-chat-title');
-const welcomeSubtitle = document.getElementById('welcome-subtitle');
+const cascadeBadge    = document.getElementById('cascade-badge');
+const xboxSplash       = document.getElementById('xbox-splash');
+const xboxSplashButton = document.getElementById('xbox-splash-button');
+const xboxSplashSkip   = document.getElementById('xbox-splash-skip');
+const xboxStatusText   = document.getElementById('xbox-status-text');
+const replaySplashBtn  = document.getElementById('replay-splash-btn');
+const topbarTitle      = document.getElementById('topbar-title');
 
 // ---- Storage helpers ----
 function loadChats() {
@@ -71,29 +79,14 @@ function applyTheme() {
   themeIconLight.style.display = state.isDark ? '' : 'none';
 }
 
-// ---- Saludo según la hora (sin perfiles) ----
-function setTimeGreeting() {
-  const h = new Date().getHours();
-  const saludo = h >= 6 && h < 12 ? 'Buenos días' : h >= 12 && h < 19 ? 'Buenas tardes' : 'Buenas noches';
-  welcomeSubtitle.textContent = `> ${saludo}, ¿en qué puedo ayudarte hoy?`;
+function loadProvider() {
+  state.provider = 'cascade';
 }
 
-// ---- Detalle geek sutil en la bienvenida ----
-const GEEK_LINES = [
-  'follow the white rabbit',
-  'hay pastillas rojas y azules',
-  'hay plano y no hay plano',
-  'elegiste la píldora correcta',
-  'el sistema te vigila… me refiero a que te recuerda',
-];
-const welcomeGeek = document.getElementById('welcome-geek');
-let geekIdx = 0;
-function tickGeek() {
-  if (!welcomeGeek) return;
-  welcomeGeek.textContent = GEEK_LINES[geekIdx++ % GEEK_LINES.length];
+function setProvider() {
+  state.provider = 'cascade';
+  inputEl.placeholder = 'Escribe un mensaje a Geminuel...';
 }
-tickGeek();
-setInterval(tickGeek, 6000);
 
 // ---- Chat helpers ----
 function currentChat() {
@@ -127,6 +120,11 @@ function escapeHtml(text) {
 
 function parseMarkdown(text) {
   let html = escapeHtml(text);
+
+  // Reasoning block (<think>...</think>)
+  html = html.replace(/&lt;think&gt;([\s\S]*?)&lt;\/think&gt;/gi, (_, thought) =>
+    `<details class="reasoning-block" open><summary class="reasoning-summary">🧠 Proceso de razonamiento</summary><div class="reasoning-content">${thought.trim()}</div></details>`
+  );
 
   // Code blocks
   html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) =>
@@ -219,7 +217,7 @@ function renderChatList() {
 
   const sorted = [...state.chats].sort((a, b) => b.ts - a.ts);
   for (const chat of sorted) {
-    const item = document.createElement('div');
+    const item = document.createElement('li');
     item.className = 'chat-item' + (chat.id === state.currentChatId ? ' active' : '');
     item.dataset.id = chat.id;
     item.innerHTML = `
@@ -230,7 +228,12 @@ function renderChatList() {
         <span class="chat-item-title">${escapeHtml(chat.title)}</span>
         <span class="chat-item-time">${timeAgo(chat.ts || Date.now())}</span>
       </div>
-      <button class="chat-item-delete" title="Eliminar conversación" aria-label="Eliminar">×</button>
+      <button class="chat-item-delete" title="Eliminar conversación" aria-label="Eliminar conversación">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+      </button>
     `;
     chatList.appendChild(item);
   }
@@ -241,14 +244,28 @@ chatList.addEventListener('click', e => {
   if (!item) return;
   const id = Number(item.dataset.id);
   if (e.target.closest('.chat-item-delete')) {
+    e.stopPropagation();
     deleteChat(id);
     return;
   }
   openChat(id);
 });
 
-function deleteChat(id) {
-  if (!confirm('¿Eliminar esta conversación?')) return;
+async function deleteChat(id) {
+  const chat = state.chats.find(c => c.id === id);
+  const chatName = chat?.title || 'esta conversación';
+
+  const confirmed = await showConfirmModal({
+    title: '¿Eliminar conversación?',
+    message: 'Esta acción no se puede deshacer. Se borrarán todos los mensajes de esta conversación.',
+    chatTitle: chatName,
+    confirmText: 'Eliminar conversación',
+    cancelText: 'Cancelar',
+    isDanger: true
+  });
+
+  if (!confirmed) return;
+
   state.chats = state.chats.filter(c => c.id !== id);
   saveChats();
   if (state.currentChatId === id) {
@@ -277,7 +294,7 @@ function openChat(id) {
   updateTopbarTitle();
   welcomeScreen.style.display = 'none';
   messagesEl.innerHTML = '';
-  for (const m of chat.messages) renderLoadedMessage(m.role, m.content);
+  for (const m of chat.messages) renderLoadedMessage(m.role, m.content, m.provider, m.cascaded);
   renderChatList();
   scrollToBottom(false);
   if (isMobile()) hideSidebar();
@@ -301,7 +318,7 @@ function aiBlockHTML(content) {
   return `
     <div class="message-inner">
       <div class="ai-header">
-        <div class="ai-avatar">
+        <div class="ai-avatar" title="Geminuel">
           <span class="ai-avatar-glyph" aria-hidden="true">G</span>
         </div>
         <span class="ai-name">Geminuel</span>
@@ -319,7 +336,7 @@ function aiBlockHTML(content) {
 }
 
 function renderLoadedMessage(role, content) {
-  const el = document.createElement('div');
+  const el = document.createElement('article');
   el.className = 'message ' + role;
 
   if (role === 'user') {
@@ -351,62 +368,42 @@ function bindCopy(btn, text) {
   });
 }
 
-// ---- Render AI typing indicator ----
+// ---- Render AI typing indicator (Xbox Controller Pulse Style) ----
 function renderTyping() {
-  const el = document.createElement('div');
+  const el = document.createElement('article');
   el.className = 'message ai';
   el.id = 'typing-msg';
   el.innerHTML = `
     <div class="message-inner">
       <div class="ai-header">
-        <div class="ai-avatar">
+        <div class="ai-avatar" title="Geminuel">
           <span class="ai-avatar-glyph" aria-hidden="true">G</span>
         </div>
         <span class="ai-name">Geminuel</span>
       </div>
-      <div class="typing-indicator">
-        <div class="typing-dot"></div>
-        <div class="typing-dot"></div>
-        <div class="typing-dot"></div>
+      <div class="xbox-thinking-container">
+        <div class="xbox-thinking-orb-wrap">
+          <div class="xbox-mini-wave wave-1"></div>
+          <div class="xbox-mini-wave wave-2"></div>
+          <div class="xbox-thinking-sphere">
+            <div class="xbox-sphere-sheen mini"></div>
+            <div class="thinking-guide-g" aria-hidden="true">
+              <span class="thinking-g-char">G</span><span class="thinking-g-cursor"></span>
+            </div>
+          </div>
+        </div>
+        <div class="xbox-thinking-info">
+          <div class="xbox-thinking-title">
+            <span>Pensando respuesta</span>
+            <span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span>
+          </div>
+        </div>
       </div>
-      <div class="typing-status" id="typing-status"></div>
     </div>
   `;
   messagesEl.appendChild(el);
   scrollToBottom();
   return el;
-}
-
-// ---- Frases cortas de "cargando" según el tema ----
-function loadingStatus(text) {
-  const t = text.toLowerCase();
-  const m =
-    /python|javascript|typescript|java\b|php|ruby|rust|go\b|c\b/.exec(t) ||
-    /base de datos|sql|mysql|mongodb|database/.exec(t) ||
-    /css|html|frontend|web/.exec(t) ||
-    /algoritmo|recurs|estructura de datos/.exec(t) ||
-    /error|bug|debug|excepci\w*/.exec(t) ||
-    /arquitectura|microservicio|escalab/.exec(t);
-
-  const generic = [
-    'analizando tu consulta',
-    'consultando la matriz',
-    'pensando en cinco',
-    'sintetizando respuesta',
-    'procesando petición',
-    'revisando kilobits',
-  ];
-
-  if (!m) return generic;
-
-  const topic = m[0];
-  return [
-    `procesando ${topic}`,
-    `compilando ${topic}`,
-    `corrigiendo ${topic}`,
-    `analizando ${topic}`,
-    ...generic.slice(2),
-  ];
 }
 
 // ---- Stream AI text character by character ----
@@ -416,7 +413,7 @@ async function streamAIResponse(text, typingEl, warning) {
   // Replace typing dots with content container
   inner.innerHTML = `
     <div class="ai-header">
-      <div class="ai-avatar">
+      <div class="ai-avatar" title="Geminuel">
         <span class="ai-avatar-glyph" aria-hidden="true">G</span>
       </div>
       <span class="ai-name">Geminuel</span>
@@ -429,12 +426,6 @@ async function streamAIResponse(text, typingEl, warning) {
           <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
         </svg>
         <span class="action-label">Copiar</span>
-      </button>
-      <button class="action-btn regenerate-btn" title="Regenerar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-        </svg>
-        <span class="action-label">Regenerar</span>
       </button>
     </div>
   `;
@@ -504,29 +495,24 @@ async function sendMessage(text) {
 
   // Show typing indicator
   const typingEl = renderTyping();
+  scrollToBottom();
 
-  // Rotar frases de "cargando" para que no parezca inactivo
-  const statusEl = typingEl.querySelector('#typing-status');
-  const statuses = loadingStatus(text);
-  let statusIdx = 0;
-  if (statusEl) statusEl.textContent = statuses[statusIdx];
-  const statusTimer = setInterval(() => {
-    if (!statusEl) return;
-    statusEl.textContent = statuses[++statusIdx % statuses.length];
-  }, 1500);
+  // Get response through the automatic cascade
+  const result = await GeminuelEngine.getResponse(text, chat.messages, 'cascade');
 
-  // Get response from the Geminuel engine (Gemini API)
-  const result = await GeminuelEngine.getResponse(text, chat.messages);
+  // Stream response
+  await streamAIResponse(
+    result.text,
+    typingEl,
+    result.ok ? null : result.warning
+  );
 
-  clearInterval(statusTimer);
-
-  // Stream response (con aviso visible si la API falló)
-  await streamAIResponse(result.text, typingEl, result.ok ? null : result.warning);
-
-  // Solo se guarda en el historial una respuesta real; los
-  // mensajes de error no deben ensuciar el contexto de la IA.
+  // Solo se guarda en el historial una respuesta real
   if (result.ok) {
-    chat.messages.push({ role: 'assistant', content: result.text });
+    chat.messages.push({
+      role: 'assistant',
+      content: result.text,
+    });
   }
   chat.ts = Date.now();
   saveChats();
@@ -549,10 +535,22 @@ inputEl.addEventListener('input', () => {
 });
 
 // ---- Send on Enter (Shift+Enter = new line) ----
+const chatForm = document.getElementById('chat-form');
+if (chatForm) {
+  chatForm.addEventListener('submit', e => {
+    e.preventDefault();
+    sendMessage(inputEl.value);
+  });
+}
+
 inputEl.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
-    sendMessage(inputEl.value);
+    if (chatForm) {
+      chatForm.requestSubmit();
+    } else {
+      sendMessage(inputEl.value);
+    }
   }
 });
 
@@ -575,13 +573,247 @@ themeToggle.addEventListener('click', () => {
   applyTheme();
 });
 
+// ---- Xbox Startup Audio & Lifecycle ----
+function playXboxChime() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    const freqs = [523.25, 659.25, 783.99, 1046.50];
+    freqs.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.04);
+      gain.gain.setValueAtTime(0, now + idx * 0.04);
+      gain.gain.linearRampToValueAtTime(0.07 / (idx + 1), now + idx * 0.04 + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2 + idx * 0.1);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + idx * 0.04);
+      osc.stop(now + 1.4);
+    });
+  } catch {}
+}
+
+let splashDismissed = false;
+function dismissXboxSplash(fast = false) {
+  if (splashDismissed || !xboxSplash) return;
+  splashDismissed = true;
+
+  const btn = document.getElementById('xbox-splash-button');
+  if (btn) btn.classList.add('flare');
+  if (!fast) playXboxChime();
+
+  setTimeout(() => {
+    if (xboxSplash) xboxSplash.classList.add('fade-out');
+    setTimeout(() => {
+      if (xboxSplash) xboxSplash.style.display = 'none';
+      inputEl.focus();
+    }, 550);
+  }, fast ? 80 : 360);
+}
+
+function startXboxSplash() {
+  if (!xboxSplash) return;
+  splashDismissed = false;
+  xboxSplash.style.display = 'flex';
+  void xboxSplash.offsetWidth; // Force reflow
+  xboxSplash.classList.remove('fade-out');
+  const btn = document.getElementById('xbox-splash-button');
+  if (btn) btn.classList.remove('flare');
+
+  if (xboxStatusText) xboxStatusText.textContent = 'Iniciando Geminuel...';
+
+  setTimeout(() => {
+    if (!splashDismissed && xboxStatusText) {
+      xboxStatusText.textContent = 'Preparando entorno de programación...';
+    }
+  }, 1100);
+
+  setTimeout(() => {
+    if (!splashDismissed && xboxStatusText) {
+      xboxStatusText.textContent = '¡Listo para programar!';
+      if (btn) btn.classList.add('flare');
+      playXboxChime();
+    }
+  }, 2200);
+
+  setTimeout(() => {
+    if (!splashDismissed) dismissXboxSplash(false);
+  }, 2600);
+}
+
+function initXboxSplash() {
+  if (!xboxSplash) return;
+  startXboxSplash();
+
+  xboxSplash.addEventListener('click', e => {
+    if (e.target.closest('#xbox-splash-skip')) {
+      e.stopPropagation();
+      dismissXboxSplash(true);
+      return;
+    }
+    dismissXboxSplash(false);
+  });
+
+  window.addEventListener('keydown', e => {
+    if ((e.key === 'Escape' || e.key === 'Enter') && !splashDismissed) {
+      dismissXboxSplash(true);
+    }
+  });
+
+  if (replaySplashBtn) {
+    replaySplashBtn.addEventListener('click', () => startXboxSplash());
+  }
+  if (topbarTitle) {
+    topbarTitle.style.cursor = 'pointer';
+    topbarTitle.setAttribute('title', 'Clic para ver animación Xbox de inicio');
+    topbarTitle.addEventListener('click', () => startXboxSplash());
+  }
+}
+
+// ============================================================
+// CUSTOM CONFIRMATION MODAL SYSTEM
+// ============================================================
+let confirmModalResolver = null;
+let lastActiveElement = null;
+
+function showConfirmModal({
+  title = '¿Eliminar conversación?',
+  message = 'Esta acción no se puede deshacer. Los mensajes se borrarán definitivamente de tu historial.',
+  chatTitle = '',
+  confirmText = 'Eliminar conversación',
+  cancelText = 'Cancelar',
+  isDanger = true
+} = {}) {
+  const modal = document.getElementById('confirm-modal');
+  if (!modal) {
+    return Promise.resolve(window.confirm(message));
+  }
+
+  const modalTitle = document.getElementById('confirm-modal-title');
+  const modalDesc = document.getElementById('confirm-modal-desc');
+  const modalChatTitle = document.getElementById('confirm-modal-chat-title');
+  const modalPreview = document.getElementById('confirm-modal-preview');
+  const acceptBtnText = document.getElementById('confirm-modal-accept-text');
+  const cancelBtn = document.getElementById('confirm-modal-cancel');
+  const acceptBtn = document.getElementById('confirm-modal-accept');
+  const iconWrapper = document.getElementById('confirm-modal-icon');
+
+  lastActiveElement = document.activeElement;
+
+  if (modalTitle) modalTitle.textContent = title;
+  if (modalDesc) modalDesc.textContent = message;
+  if (acceptBtnText) acceptBtnText.textContent = confirmText;
+  if (cancelBtn) cancelBtn.textContent = cancelText;
+
+  if (iconWrapper) {
+    iconWrapper.className = 'confirm-modal-icon-wrapper' + (isDanger ? ' danger' : '');
+  }
+
+  if (chatTitle && modalPreview && modalChatTitle) {
+    modalChatTitle.textContent = chatTitle;
+    modalPreview.style.display = 'flex';
+  } else if (modalPreview) {
+    modalPreview.style.display = 'none';
+  }
+
+  modal.classList.remove('closing');
+  if (typeof modal.showModal === 'function') {
+    if (!modal.open) modal.showModal();
+  } else {
+    modal.hidden = false;
+  }
+
+  // Focus the cancel button so pressing Enter/Space does not accidentally delete
+  if (cancelBtn) {
+    setTimeout(() => cancelBtn.focus(), 25);
+  }
+
+  return new Promise(resolve => {
+    confirmModalResolver = resolve;
+  });
+}
+
+function closeConfirmModal(result = false) {
+  const modal = document.getElementById('confirm-modal');
+  if (!modal) return;
+  const isOpen = (typeof modal.open === 'boolean' ? modal.open : !modal.hidden);
+  if (!isOpen) return;
+
+  modal.classList.add('closing');
+  setTimeout(() => {
+    if (typeof modal.close === 'function' && modal.open) {
+      try { modal.close(); } catch (_) {}
+    } else {
+      modal.hidden = true;
+    }
+    modal.classList.remove('closing');
+    if (confirmModalResolver) {
+      confirmModalResolver(result);
+      confirmModalResolver = null;
+    }
+    if (lastActiveElement && typeof lastActiveElement.focus === 'function') {
+      try { lastActiveElement.focus(); } catch (_) {}
+    }
+  }, 160);
+}
+
+function initConfirmModal() {
+  const modal = document.getElementById('confirm-modal');
+  if (!modal) return;
+
+  const cancelBtn = document.getElementById('confirm-modal-cancel');
+  const closeBtn  = document.getElementById('confirm-modal-close');
+  const acceptBtn = document.getElementById('confirm-modal-accept');
+
+  if (cancelBtn) cancelBtn.addEventListener('click', () => closeConfirmModal(false));
+  if (closeBtn)  closeBtn.addEventListener('click', () => closeConfirmModal(false));
+  if (acceptBtn) acceptBtn.addEventListener('click', () => closeConfirmModal(true));
+
+  // Native HTML5 dialog cancel event (triggers on Escape)
+  modal.addEventListener('cancel', e => {
+    e.preventDefault();
+    closeConfirmModal(false);
+  });
+
+  // Click on dialog backdrop (outside card) closes modal
+  modal.addEventListener('click', e => {
+    const card = modal.querySelector('.confirm-modal-card');
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const clickedInside = (
+      rect.top <= e.clientY && e.clientY <= rect.bottom &&
+      rect.left <= e.clientX && e.clientX <= rect.right
+    );
+    if (!clickedInside) {
+      closeConfirmModal(false);
+    }
+  });
+
+  window.addEventListener('keydown', e => {
+    const isOpen = typeof modal.open === 'boolean' ? modal.open : !modal.hidden;
+    if (!isOpen) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeConfirmModal(false);
+    }
+  });
+}
+
 // ---- Init ----
 loadTheme();
 applyTheme();
-setTimeGreeting();
+loadProvider();
+setProvider();
 if (isMobile()) hideSidebar();
 renderChatList();
 updateSidebarForTyping();
+initXboxSplash();
+initConfirmModal();
 
 const latest = [...state.chats].sort((a, b) => (b.ts || 0) - (a.ts || 0))[0];
 if (latest) {

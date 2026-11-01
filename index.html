@@ -1,146 +1,241 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Geminuel — Tu asistente de IA</title>
-  <meta name="description" content="Geminuel es tu asistente de inteligencia artificial personal. Conversaciones naturales, respuestas inteligentes." />
+  <meta name="description"
+    content="Geminuel es tu asistente de inteligencia artificial personal. Conversaciones naturales, respuestas inteligentes." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=16" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=3" />
+  <link rel="alternate icon" type="image/svg+xml" href="favicon.svg?v=3" />
+  <link rel="stylesheet" href="css/style.css?v=19" />
 </head>
+
 <body>
 
-<!-- Sidebar -->
-<aside class="sidebar" id="sidebar">
-
-  <div class="sidebar-header">
-    <button class="new-chat-btn" id="new-chat-btn" title="Nueva conversación">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <circle cx="12" cy="12" r="10"/>
-        <path d="M12 8v8M8 12h8"/>
-      </svg>
-      <span>Nuevo chat</span>
-    </button>
-    <button class="icon-btn sidebar-close-btn" id="sidebar-close-btn" title="Cerrar" aria-label="Cerrar menú">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-      </svg>
-    </button>
+  <!-- Startup Splash Screen -->
+  <div id="xbox-splash" class="xbox-splash" role="dialog" aria-modal="true" aria-label="Inicio Geminuel">
+    <div class="xbox-splash-backdrop"></div>
+    <div class="xbox-splash-stage">
+      <div class="xbox-guide-orb-wrap">
+        <div class="xbox-pulse-wave wave-1"></div>
+        <div class="xbox-pulse-wave wave-2"></div>
+        <div class="xbox-pulse-wave wave-3"></div>
+        <div class="xbox-guide-sphere" id="xbox-splash-button" title="Haz clic para iniciar ya">
+          <div class="xbox-sphere-sheen"></div>
+          <div class="geminuel-guide-g" aria-hidden="true">
+            <span class="guide-g-char">G</span><span class="guide-g-cursor"></span>
+          </div>
+        </div>
+      </div>
+      <div class="xbox-splash-info">
+        <h2 class="xbox-splash-title">GEMINUEL</h2>
+        <div class="xbox-splash-status" role="status" aria-live="polite">
+          <span class="xbox-status-dot" aria-hidden="true"></span>
+          <span class="xbox-status-text" id="xbox-status-text">Iniciando Geminuel...</span>
+        </div>
+      </div>
+      <button class="xbox-splash-skip" id="xbox-splash-skip" aria-label="Saltar intro">Saltar intro [Esc]</button>
+    </div>
   </div>
 
-  <nav class="sidebar-nav">
-    <div class="nav-label">Conversaciones</div>
-    <div class="chat-list" id="chat-list"></div>
-    <p class="chat-list-empty" id="chat-list-empty" hidden>Sin conversaciones todavía.</p>
-  </nav>
-  
-</aside>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar" aria-label="Historial de conversaciones">
 
-<!-- Overlay (solo móvil) -->
-<div class="sidebar-overlay" id="sidebar-overlay"></div>
-
-<!-- Main Chat Area -->
-<main class="main" id="main">
-
-  <!-- Top bar -->
-  <header class="topbar">
-
-    <button class="icon-btn menu-btn" id="menu-btn" title="Mostrar conversaciones" aria-label="Mostrar conversaciones">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-        <line x1="3" y1="6" x2="21" y2="6"/>
-        <line x1="3" y1="12" x2="21" y2="12"/>
-        <line x1="3" y1="18" x2="14" y2="18"/>
-      </svg>
-    </button>
-
-    <div class="topbar-title" id="topbar-title">
-      <span class="logo-terminal" aria-hidden="true"><span class="logo-glyph">G</span><span class="logo-cursor"></span></span>
-      Geminuel
-      <span class="topbar-chat-title" id="topbar-chat-title" hidden></span>
-    </div>
-
-    <div class="topbar-actions">
-      <button class="icon-btn" id="theme-toggle" title="Cambiar tema" aria-label="Cambiar tema">
-        <svg id="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    <header class="sidebar-header">
+      <button class="new-chat-btn" id="new-chat-btn" title="Nueva conversación">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 8v8M8 12h8" />
         </svg>
-        <svg id="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none">
-          <circle cx="12" cy="12" r="5"/>
-          <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        <span>Nuevo Chat</span>
+      </button>
+      <button class="icon-btn sidebar-close-btn" id="sidebar-close-btn" title="Cerrar" aria-label="Cerrar menú de conversaciones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       </button>
-    </div>
-  </header>
+    </header>
 
-  <!-- Chat messages -->
-  <div class="chat-area" id="chat-area">
+    <nav class="sidebar-nav" aria-label="Conversaciones guardadas">
+      <h2 class="nav-label">Conversaciones</h2>
+      <ul class="chat-list" id="chat-list"></ul>
+      <p class="chat-list-empty" id="chat-list-empty" hidden>Sin conversaciones todavía.</p>
+    </nav>
 
-    <!-- Welcome screen (shown when no messages) -->
-    <div class="welcome" id="welcome-screen">
-      <pre class="ascii-logo" aria-label="GEMINUEL">
+  </aside>
+
+  <!-- Overlay (solo móvil) -->
+  <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
+
+  <!-- Main Chat Area -->
+  <main class="main" id="main">
+
+    <!-- Top bar -->
+    <header class="topbar">
+
+      <button class="icon-btn menu-btn" id="menu-btn" title="Mostrar conversaciones"
+        aria-label="Mostrar conversaciones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="14" y2="18" />
+        </svg>
+      </button>
+
+      <h1 class="topbar-title" id="topbar-title">
+        <span class="logo-terminal" aria-hidden="true"><span class="logo-glyph">G</span><span
+            class="logo-cursor"></span></span>
+        Geminuel
+        <span class="topbar-chat-title" id="topbar-chat-title" hidden></span>
+      </h1>
+
+      <div class="topbar-actions" role="toolbar" aria-label="Acciones de la aplicación">
+        <button class="icon-btn" id="replay-splash-btn" title="Ver animación de inicio"
+          aria-label="Ver animación de inicio">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" aria-hidden="true">
+            <polygon points="5 3 19 12 5 21 5 3" />
+          </svg>
+        </button>
+
+        <button class="icon-btn" id="theme-toggle" title="Cambiar tema" aria-label="Cambiar tema">
+          <svg id="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+          </svg>
+          <svg id="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round" style="display:none" aria-hidden="true">
+            <circle cx="12" cy="12" r="5" />
+            <line x1="12" y1="1" x2="12" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="23" />
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+            <line x1="1" y1="12" x2="3" y2="12" />
+            <line x1="21" y1="12" x2="23" y2="12" />
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Chat messages -->
+    <section class="chat-area" id="chat-area" aria-label="Área de conversación">
+
+      <!-- Welcome screen (shown when no messages) -->
+      <section class="welcome" id="welcome-screen" aria-label="Bienvenida y sugerencias">
+        <pre class="ascii-logo" aria-label="GEMINUEL">
   ____ _____ __  __ ___ _  _ _   _ _____ _     
  / ___| ____|  \/  |_ _| \| | | | | ____| |    
 | |  _|  _| | |\/| || || .` | | | |  _| | |    
 | |_| | |___| |  | || || |\  | |_| | |___| |___
  \____|_____|_|  |_|___|_| \_|\___/|_____|_____|</pre>
-      <p class="welcome-subtitle" id="welcome-subtitle">&gt; ¿En qué puedo ayudarte hoy?</p>
-      <p class="welcome-geek" id="welcome-geek" aria-hidden="true">follow the white rabbit</p>
-      <div class="suggestion-list">
-        <button class="suggestion-card terminal-prompt" data-prompt="Revisa este código y encuentra posibles bugs">
-          <span class="prompt-prefix">~/geminuel &gt;</span>
-          <span class="prompt-text">Encontrar bugs en código</span>
-        </button>
-        <button class="suggestion-card terminal-prompt" data-prompt="Ayúdame a diseñar la arquitectura para una app web escalable">
-          <span class="prompt-prefix">~/geminuel &gt;</span>
-          <span class="prompt-text">Diseño de arquitectura</span>
-        </button>
-        <button class="suggestion-card terminal-prompt" data-prompt="¿Cómo puedo refactorizar esta función para mejorar su rendimiento?">
-          <span class="prompt-prefix">~/geminuel &gt;</span>
-          <span class="prompt-text">Optimizar rendimiento</span>
-        </button>
-        <button class="suggestion-card terminal-prompt" data-prompt="Explícame cómo funciona el algoritmo de Dijkstra paso a paso">
-          <span class="prompt-prefix">~/geminuel &gt;</span>
-          <span class="prompt-text">Explicar un algoritmo</span>
-        </button>
-      </div>
-    </div>
+        <p class="welcome-subtitle">&gt; ¿En qué puedo ayudarte hoy?</p>
+        <div class="suggestion-list" role="group" aria-label="Sugerencias de inicio rápido">
+          <button class="suggestion-card terminal-prompt" data-prompt="Revisa este código y encuentra posibles bugs">
+            <span class="prompt-prefix">~/geminuel &gt;</span>
+            <span class="prompt-text">Encontrar bugs en código</span>
+          </button>
+          <button class="suggestion-card terminal-prompt"
+            data-prompt="Ayúdame a diseñar la arquitectura para una app web escalable">
+            <span class="prompt-prefix">~/geminuel &gt;</span>
+            <span class="prompt-text">Diseño de arquitectura</span>
+          </button>
+          <button class="suggestion-card terminal-prompt"
+            data-prompt="¿Cómo puedo refactorizar esta función para mejorar su rendimiento?">
+            <span class="prompt-prefix">~/geminuel &gt;</span>
+            <span class="prompt-text">Optimizar rendimiento</span>
+          </button>
+          <button class="suggestion-card terminal-prompt"
+            data-prompt="Explícame cómo funciona el algoritmo de Dijkstra paso a paso">
+            <span class="prompt-prefix">~/geminuel &gt;</span>
+            <span class="prompt-text">Explicar un algoritmo</span>
+          </button>
+        </div>
+      </section>
 
-    <!-- Messages container -->
-    <div class="messages" id="messages"></div>
+      <!-- Messages container -->
+      <div class="messages" id="messages" role="log" aria-live="polite" aria-label="Historial de mensajes"></div>
 
-  </div>
+    </section>
 
-  <!-- Input area -->
-  <div class="input-area">
-    <div class="input-wrapper">
-      <textarea
-        id="message-input"
-        class="message-input"
-        placeholder="Escribe un mensaje a Geminuel..."
-        rows="1"
-        aria-label="Escribe tu mensaje"
-      ></textarea>
-      <div class="input-actions">
-        <span class="char-counter" id="char-counter"></span>
-        <button class="send-btn" id="send-btn" aria-label="Enviar mensaje" disabled>
+    <!-- Input area -->
+    <footer class="input-area" role="region" aria-label="Barra de envío de mensajes">
+      <form class="input-wrapper" id="chat-form">
+        <textarea id="message-input" class="message-input" placeholder="Escribe un mensaje a Geminuel..." rows="1"
+          aria-label="Escribe tu mensaje para Geminuel"></textarea>
+        <div class="input-actions">
+          <span class="char-counter" id="char-counter" aria-live="polite"></span>
+          <button type="submit" class="send-btn" id="send-btn" aria-label="Enviar mensaje" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" aria-hidden="true">
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </button>
+        </div>
+      </form>
+      <p class="input-disclaimer">Geminuel puede cometer errores. Verifica la información.</p>
+    </footer>
+
+  </main>
+
+  <!-- Custom Confirmation Modal (HTML5 Native Dialog) -->
+  <dialog id="confirm-modal" class="confirm-modal-dialog" aria-labelledby="confirm-modal-title" aria-describedby="confirm-modal-desc">
+    <div class="confirm-modal-card">
+      <button type="button" class="confirm-modal-close" id="confirm-modal-close" title="Cerrar [Esc]" aria-label="Cerrar modal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="confirm-modal-header">
+        <div class="confirm-modal-icon-wrapper danger" id="confirm-modal-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"/>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
           </svg>
+        </div>
+        <div class="confirm-modal-title-group">
+          <h3 class="confirm-modal-title" id="confirm-modal-title">¿Eliminar conversación?</h3>
+          <p class="confirm-modal-desc" id="confirm-modal-desc">
+            Esta acción no se puede deshacer. Los mensajes se borrarán definitivamente de tu historial.
+          </p>
+        </div>
+      </div>
+
+      <div class="confirm-modal-preview" id="confirm-modal-preview">
+        <svg class="preview-chat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span class="preview-chat-title" id="confirm-modal-chat-title"></span>
+      </div>
+
+      <div class="confirm-modal-actions">
+        <button type="button" class="confirm-btn-secondary" id="confirm-modal-cancel">Cancelar</button>
+        <button type="button" class="confirm-btn-danger" id="confirm-modal-accept">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          <span id="confirm-modal-accept-text">Eliminar</span>
         </button>
       </div>
     </div>
-    <p class="input-disclaimer">Geminuel puede cometer errores. Verifica la información importante.</p>
-  </div>
+  </dialog>
 
-</main>
-
-<script src="js/engine.js?v=18"></script>
-  <script src="js/app.js?v=16"></script>
+  <script src="js/engine.js?v=19"></script>
+  <script src="js/app.js?v=19"></script>
 </body>
+
 </html>
