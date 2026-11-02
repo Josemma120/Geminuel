@@ -146,7 +146,7 @@ Abre `.env` con un editor de texto e introduce al menos una clave válida:
 # Clave de Google Gemini (Google AI Studio)
 GEMINI_API_KEY=tu_clave_gemini_aqui
 
-# Clave de Groq (Groq Console - Opcional, activa Llama 3.3 70B como proveedor prioritario)
+# Clave de Groq (Groq Console - Opcional, activa Llama 3.1 8B como proveedor prioritario)
 GROQ_API_KEY=tu_clave_groq_aqui
 
 # Puerto de escucha local (por defecto: 8000)

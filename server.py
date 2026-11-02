@@ -48,8 +48,12 @@ GEMINI_URL     = (
 )
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY") or os.getenv("DEEPSEEK_API_KEY") or ""
-GROQ_MODEL   = os.getenv("GROQ_MODEL") or "llama-3.3-70b-versatile"
+GROQ_MODEL   = os.getenv("GROQ_MODEL") or "llama-3.1-8b-instant"
 GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODELS_URL = "https://api.groq.com/openai/v1/models"
+
+_GROQ_DETECTED_MODELS: list[str] = []
+_GROQ_ACTIVE_MODEL: str = GROQ_MODEL
 
 HISTORY_WINDOW = 12
 
@@ -159,12 +163,49 @@ async def _call_gemini(user_message: str, history: list) -> str:
     return text
 
 
+async def _detect_groq_models() -> list[str]:
+    global _GROQ_DETECTED_MODELS, _GROQ_ACTIVE_MODEL
+    if not GROQ_API_KEY:
+        return []
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                GROQ_MODELS_URL,
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+            )
+            if resp.status_code == 200:
+                data = resp.json().get("data", [])
+                chat_models = [
+                    m["id"] for m in data
+                    if not any(x in m["id"].lower() for x in ["whisper", "guard", "safeguard", "embed"])
+                ]
+                _GROQ_DETECTED_MODELS = chat_models
+                if chat_models:
+                    if _GROQ_ACTIVE_MODEL not in chat_models:
+                        _GROQ_ACTIVE_MODEL = chat_models[0]
+                    print(f"[Groq] Modelos de chat disponibles en tu cuenta ({len(chat_models)}): {chat_models}")
+                    print(f"[Groq] Modelo activo asignado: {_GROQ_ACTIVE_MODEL}")
+                else:
+                    all_ids = [m["id"] for m in data]
+                    print(f"[Groq] Tu clave no tiene modelos de chat habilitados. Modelos totales en cuenta: {all_ids}")
+                return chat_models
+            else:
+                print(f"[Groq] Error al verificar clave ({resp.status_code}): {resp.text}")
+    except Exception as exc:
+        print(f"[Groq] Error conectando a Groq: {exc}")
+    return []
+
+
 async def _call_groq(user_message: str, history: list) -> str:
+    global _GROQ_ACTIVE_MODEL
     if not GROQ_API_KEY:
         raise RuntimeError(
             "Falta configurar GROQ_API_KEY en .env. "
             "Consiguela 100% gratis en https://console.groq.com/keys"
         )
+
+    if not _GROQ_DETECTED_MODELS:
+        await _detect_groq_models()
 
     messages: list = [{"role": "system", "content": SYSTEM_PROMPT}]
     valid = [
@@ -182,34 +223,53 @@ async def _call_groq(user_message: str, history: list) -> str:
         messages.append({"role": "user", "content": user_message})
 
     body = {
-        "model": GROQ_MODEL,
+        "model": _GROQ_ACTIVE_MODEL or GROQ_MODEL,
         "messages": messages,
         "temperature": 0.6,
         "max_tokens": 4096,
     }
 
-    resp = None
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        for attempt in range(1, 4):
-            resp = await client.post(
-                GROQ_URL,
-                json=body,
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {GROQ_API_KEY}",
-                },
-            )
-            if resp.status_code in (429, 503):
-                await asyncio.sleep(0.7 * attempt)
-            else:
-                break
+    candidates = []
+    if _GROQ_ACTIVE_MODEL:
+        candidates.append(_GROQ_ACTIVE_MODEL)
+    for m in _GROQ_DETECTED_MODELS:
+        if m not in candidates:
+            candidates.append(m)
+    if not candidates:
+        candidates = [GROQ_MODEL, "llama-3.1-8b-instant", "llama3-8b-8192", "mixtral-8x7b-32768"]
 
-    if not resp.is_success:
+    resp = None
+    for candidate_model in candidates:
+        body["model"] = candidate_model
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            for attempt in range(1, 4):
+                resp = await client.post(
+                    GROQ_URL,
+                    json=body,
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {GROQ_API_KEY}",
+                    },
+                )
+                if resp.status_code in (429, 503):
+                    await asyncio.sleep(0.7 * attempt)
+                else:
+                    break
+
+        if resp.status_code == 404:
+            print(f"[Groq] Modelo '{candidate_model}' no disponible (404), intentando siguiente...")
+            continue
+        if resp.is_success:
+            _GROQ_ACTIVE_MODEL = candidate_model
+        break
+
+    if not resp or not resp.is_success:
         try:
-            detail = str(resp.json())
+            detail = str(resp.json()) if resp else "Sin respuesta"
         except Exception:
-            detail = resp.text
-        raise RuntimeError(f"Groq API error {resp.status_code}: {detail}")
+            detail = resp.text if resp else "Error de red"
+        status = resp.status_code if resp else 500
+        raise RuntimeError(f"Groq API error {status}: {detail}")
 
     data = resp.json()
     choice = (data.get("choices") or [{}])[0]
@@ -225,7 +285,7 @@ async def _call_groq(user_message: str, history: list) -> str:
 
 
 async def _cascade(user_message: str, history: list) -> dict:
-    """Cascada: 1 Groq (Llama 3.3 70B) -> 2 Google Gemini (respaldo automatico)."""
+    """Cascada: 1 Groq (Llama 3.1 8B) -> 2 Google Gemini (respaldo automatico)."""
     errors: list[str] = []
 
     # 1 - Groq / DeepSeek R1
@@ -300,6 +360,17 @@ class AddMessageIn(BaseModel):
 #  Rutas /api
 # ============================================================
 
+@app.on_event("startup")
+async def startup_event():
+    await _detect_groq_models()
+
+
+@app.get("/api/groq/models")
+async def get_groq_models():
+    models = await _detect_groq_models()
+    return {"ok": True, "active": _GROQ_ACTIVE_MODEL, "available": models}
+
+
 @app.get("/api/providers")
 async def get_providers():
     return {
@@ -308,7 +379,7 @@ async def get_providers():
         "providers": {
             "groq": {
                 "configured": bool(GROQ_API_KEY),
-                "model": GROQ_MODEL,
+                "model": _GROQ_ACTIVE_MODEL or GROQ_MODEL,
                 "role": "primary",
             },
             "gemini": {
