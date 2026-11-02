@@ -48,7 +48,7 @@ GEMINI_URL     = (
 )
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY") or os.getenv("DEEPSEEK_API_KEY") or ""
-GROQ_MODEL   = os.getenv("GROQ_MODEL") or "deepseek-r1-distill-llama-70b"
+GROQ_MODEL   = os.getenv("GROQ_MODEL") or "llama-3.3-70b-versatile"
 GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions"
 
 HISTORY_WINDOW = 12
@@ -225,7 +225,7 @@ async def _call_groq(user_message: str, history: list) -> str:
 
 
 async def _cascade(user_message: str, history: list) -> dict:
-    """Cascada: 1 Groq (DeepSeek R1) -> 2 Google Gemini (respaldo automatico)."""
+    """Cascada: 1 Groq (Llama 3.3 70B) -> 2 Google Gemini (respaldo automatico)."""
     errors: list[str] = []
 
     # 1 - Groq / DeepSeek R1
@@ -439,7 +439,7 @@ if __name__ == "__main__":
     gemini_status = f"Listo ({GEMINI_MODEL})" if GEMINI_API_KEY else "Sin clave (GEMINI_API_KEY en .env)"
 
     print(f"\nGeminuel corriendo en http://localhost:{PORT}")
-    print(f"Modo: Cascada Automatica  Groq [DeepSeek R1] -> Google Gemini")
+    print(f"Modo: Cascada Automatica  Groq [{GROQ_MODEL}] -> Google Gemini")
     print(f" - 1 Groq:   {groq_status}")
     print(f" - 2 Gemini: {gemini_status}")
     print(f" - Chats:    {CHATS_FILE}\n")
