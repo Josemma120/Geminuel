@@ -2,11 +2,11 @@
 
 > Asistente de programación conversacional basado en modelos de lenguaje (LLM), desarrollado con arquitectura web desacoplada, semántica HTML5 nativa y proxy de seguridad local.
 
-[![Node.js Version](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![HTML5 Semantic](https://img.shields.io/badge/HTML5-W3C%20Semantic-E34F26?logo=html5&logoColor=white)](https://www.w3.org/TR/html52/)
 [![CSS3 Vanilla](https://img.shields.io/badge/CSS3-Vanilla%20Design%20System-1572B6?logo=css3&logoColor=white)](https://www.w3.org/Style/CSS/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B%20Vanilla-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/es/docs/Web/JavaScript)
-[![Dependencies](https://img.shields.io/badge/Dependencies-0%20(Pure%20Native)-blue)](https://nodejs.org/api/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
 ---
@@ -42,24 +42,25 @@ Geminuel estructura sus respuestas no como un generador de código opaco, sino c
 
 ## Arquitectura del Sistema
 
-El proyecto implementa una arquitectura desacoplada en tres capas con **cero dependencias externas** (sin carpeta `node_modules`), garantizando portabilidad inmediata, tiempos de carga mínimos y máxima seguridad:
+El proyecto implementa una arquitectura desacoplada en tres capas, garantizando portabilidad inmediata, tiempos de carga mínimos y máxima seguridad:
 
 ```
 ┌────────────────────────────────────────────────────────┐
 │               CAPA CLIENTE (Navegador Web)             │
 │   • index.html (Semántica HTML5 nativa & WAI-ARIA)     │
 │   • style.css  (Sistema de diseño dark terminal)       │
-│   • app.js     (Gestión de UI, historial y eventos)   │
+│   • app.js     (Gestión de UI, historial y eventos)    │
 │   • engine.js  (Capa de abstracción de red)            │
 └───────────────────────────┬────────────────────────────┘
-                            │  Peticiones HTTP (/api/chat)
+                            │  Peticiones HTTP (/api/*)
                             ▼
 ┌────────────────────────────────────────────────────────┐
-│               PROXY LOCAL SEGURO (server.js)           │
-│   • Servidor HTTP nativo de Node.js                    │
-│   • Lector de variables de entorno (.env sin paquetes) │
+│           PROXY LOCAL SEGURO (server.py — FastAPI)     │
+│   • Servidor ASGI con uvicorn                          │
+│   • Lector de variables de entorno (python-dotenv)     │
 │   • Gestión de cuotas, reintentos y fallback en cascada│
 │   • Ventana deslizante de historial (Memory Window)    │
+│   • Persistencia de chats en chats.json (servidor)     │
 └──────────────┬───────────────────────────┬─────────────┘
                │                           │
                ▼ (Proveedor prioritario)   ▼ (Fallback silencioso)
@@ -71,8 +72,9 @@ El proyecto implementa una arquitectura desacoplada en tres capas con **cero dep
 
 ### Flujo de Datos y Resiliencia en Cascada
 1. **Petición del usuario:** El frontend empaqueta el mensaje junto con una ventana deslizante de los últimos 12 mensajes del hilo.
-2. **Proxy local:** `server.js` intercepta la solicitud, inyecta las directivas de comportamiento del sistema y gestiona la llamada al proveedor.
+2. **Proxy local:** `server.py` intercepta la solicitud, inyecta las directivas de comportamiento del sistema y gestiona la llamada al proveedor.
 3. **Mapeo de resiliencia:** Ante errores de red, saturación del servicio (503) o límites de cuota (429), el servidor realiza un cambio automático y transparente al proveedor de respaldo, asegurando disponibilidad continua sin intervención manual.
+4. **Persistencia del historial:** Cada mensaje y respuesta se guarda en `chats.json` en el servidor, permitiendo retomar conversaciones desde cualquier navegador sin depender de `localStorage`.
 
 ---
 
@@ -82,8 +84,8 @@ El proyecto implementa una arquitectura desacoplada en tres capas con **cero dep
 | :--- | :--- | :--- |
 | **Estructura** | HTML5 W3C | Empleo de elementos semánticos (`<main>`, `<aside>`, `<nav>`, `<section>`, `<footer>`, `<form>`, `<h1>`-`<h2>`) y el elemento nativo `<dialog>` para modales accesibles. |
 | **Estilos** | CSS3 Vanilla | Variables CSS personalizadas (`--accent`, `--bg-app`), glassmorphism con `backdrop-filter`, animaciones optimizadas y diseño responsivo adaptativo. |
-| **Lógica Cliente** | JavaScript (ES6+) | Código modular, Promesas asíncronas (`async/await`), eventos delegados y persistencia cliente mediante `LocalStorage`. |
-| **Servidor Proxy** | Node.js (Core Modules) | Servidor HTTP creado exclusivamente con módulos estándar (`http`, `fs`, `path`). No requiere ejecutar `npm install`. |
+| **Lógica Cliente** | JavaScript (ES6+) | Código modular, Promesas asíncronas (`async/await`), eventos delegados y comunicación REST con el servidor. |
+| **Servidor Proxy** | Python 3.11 + FastAPI | Servidor ASGI con uvicorn, gestión de rutas REST, persistencia JSON y llamadas HTTP asíncronas con `httpx`. |
 
 ---
 
@@ -93,7 +95,7 @@ El proyecto implementa una arquitectura desacoplada en tres capas con **cero dep
 - **Modal de Confirmación Nativo (`<dialog>`):** Reemplazo integral de alertas bloqueantes del navegador por un cuadro de diálogo contextual, con previsualización del título a eliminar y capa de desenfoque nativa (`::backdrop`).
 - **Formulario Interactivo de Envío (`<form>`):** Procesamiento de mensajes mediante eventos estándar de formulario, permitiendo envío con tecla Enter y salto de línea con `Shift + Enter`.
 - **Indicador de Razonamiento Visual:** Animación de carga inspirada en la guía Xbox con monograma `G` iluminado y desgloses de razonamiento desplegables (`<details>` / `<summary>`).
-- **Historial Persistente y Gestión Local:** Guardado automático de conversaciones en el navegador con soporte para retomar hilos anteriores o eliminarlos de manera segura.
+- **Historial Persistente en Servidor:** Las conversaciones se guardan en `chats.json` en el servidor, sobreviviendo cambios de navegador o dispositivo y permitiendo retomar hilos anteriores o eliminarlos de forma segura.
 - **Diseño Adaptativo (Dark / Light Mode):** Paleta inspirada en entornos de desarrollo modernos y terminales de comandos, con alternador de tema en tiempo real.
 
 ---
@@ -103,7 +105,7 @@ El proyecto implementa una arquitectura desacoplada en tres capas con **cero dep
 En cumplimiento de las mejores prácticas de desarrollo web seguro:
 
 1. **Aislamiento de Credenciales:** Las claves de API (`GEMINI_API_KEY`, `GROQ_API_KEY`) residen exclusivamente en el entorno del servidor a través del archivo `.env`. Ningún token o secreto es expuesto en el código cliente ni transmitido por el navegador.
-2. **Prevención de Fugas:** El archivo `.env` se encuentra ignorado por defecto en `.gitignore` para evitar filtraciones en repositorios públicos.
+2. **Prevención de Fugas:** El archivo `.env` y el historial de chats (`chats.json`) se encuentran ignorados por defecto en `.gitignore` para evitar filtraciones en repositorios públicos.
 3. **Sanitización de Salidas:** El renderizador de contenido escapa cadenas de texto no confiables antes de inyectarlas en el DOM para mitigar vulnerabilidades XSS.
 
 ---
@@ -112,7 +114,8 @@ En cumplimiento de las mejores prácticas de desarrollo web seguro:
 
 ### Requisitos Previos
 
-- **Node.js 18.0 o superior** instalado ([nodejs.org](https://nodejs.org/)).
+- **Python 3.11 o superior** instalado ([python.org](https://www.python.org/)).
+- Claves de API de [Google AI Studio](https://aistudio.google.com/) y/o [Groq Console](https://console.groq.com/).
 
 ### 1. Clonar el repositorio
 ```bash
@@ -120,7 +123,12 @@ git clone https://github.com/Josemma120/Geminuel.git
 cd Geminuel
 ```
 
-### 2. Configurar las variables de entorno
+### 2. Instalar dependencias
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Configurar las variables de entorno
 Crea tu archivo `.env` a partir de la plantilla de ejemplo:
 
 **En Windows (PowerShell):**
@@ -138,20 +146,24 @@ Abre `.env` con un editor de texto e introduce al menos una clave válida:
 # Clave de Google Gemini (Google AI Studio)
 GEMINI_API_KEY=tu_clave_gemini_aqui
 
-# Clave de Groq (Groq Console - Opcional para respaldo)
+# Clave de Groq (Groq Console - Opcional, activa DeepSeek R1 como proveedor prioritario)
 GROQ_API_KEY=tu_clave_groq_aqui
 
 # Puerto de escucha local (por defecto: 8000)
 PORT=8000
 ```
 
-### 3. Iniciar el servidor
-Ejecuta el servidor proxy local (no requiere instalar dependencias adicionales):
+### 4. Iniciar el servidor
+
+**Opción A — Script de inicio (recomendado en Windows):**
+Haz doble clic en `start.bat`. Instala dependencias automáticamente y arranca el servidor.
+
+**Opción B — Línea de comandos:**
 ```bash
-node server.js
+python server.py
 ```
 
-### 4. Acceder en el navegador
+### 5. Acceder en el navegador
 Ingresa a la siguiente dirección en tu navegador:
 ```
 http://localhost:8000
@@ -163,17 +175,21 @@ http://localhost:8000
 
 ```
 Geminuel/
+├── server.py           # Servidor proxy FastAPI y gestión de modelos LLM
+├── requirements.txt    # Dependencias Python
+├── start.bat           # Script de inicio para Windows
 ├── index.html          # Estructura semántica HTML5 y puntos de anclaje
-├── server.js           # Servidor proxy HTTP y gestión de modelos LLM
 ├── favicon.svg         # Isotipo vectorial de la aplicación
 ├── .env.example        # Plantilla pública de variables de entorno
 ├── .gitignore          # Exclusión de archivos sensibles y temporales
 ├── README.md           # Documentación técnica del proyecto
 ├── css/
 │   └── style.css       # Sistema de diseño, tokens, componentes y animaciones
-└── js/
-    ├── app.js          # Controlador de interfaz, eventos y almacenamiento
-    └── engine.js       # Capa de comunicación asíncrona con el backend
+├── js/
+│   ├── app.js          # Controlador de interfaz, eventos y API REST client
+│   └── engine.js       # Capa de comunicación asíncrona con el backend
+└── legacy/
+    └── server.js       # Implementación anterior en Node.js (referencia)
 ```
 
 ---
