@@ -214,6 +214,7 @@ sidebarOverlay.addEventListener('click', hideSidebar);
 newChatBtn.addEventListener('click', () => {
   startNewChat();
   if (isMobile()) hideSidebar();
+
 });
 
 inputEl.addEventListener('input', updateSidebarForTyping);
@@ -311,6 +312,7 @@ function openChat(id) {
   const chat = state.chats.find(c => c.id === id);
   if (!chat) return;
   state.currentChatId = id;
+  if (window.syncRepoUIForChat) window.syncRepoUIForChat(chat);
   updateTopbarTitle();
   welcomeScreen.style.display = 'none';
   messagesEl.innerHTML = '';
@@ -318,10 +320,12 @@ function openChat(id) {
   renderChatList();
   scrollToBottom(false);
   if (isMobile()) hideSidebar();
+
 }
 
 function startNewChat() {
   state.currentChatId = null;
+  if (window.syncRepoUIForChat) window.syncRepoUIForChat(null);
   updateTopbarTitle();
   welcomeScreen.style.display = '';
   messagesEl.innerHTML = '';
@@ -522,7 +526,7 @@ async function sendMessage(text) {
   scrollToBottom();
 
   // Get response through the automatic cascade
-  const result = await GeminuelEngine.getResponse(text, chat.messages, 'cascade');
+  const result = await GeminuelEngine.getResponse(text, chat.messages, 'cascade', state.currentChatId);
 
   // Stream response
   await streamAIResponse(
@@ -836,6 +840,7 @@ function initConfirmModal() {
   applyTheme();
   setProvider();
   if (isMobile()) hideSidebar();
+
   initXboxSplash();
   initConfirmModal();
 
@@ -858,12 +863,13 @@ function initConfirmModal() {
   }
   inputEl.focus();
 })();
+
 // ============================================================
 //  Geminuel — Analizador de repositorios de GitHub
 // ============================================================
-//  UI independiente del resto de app.js: envia el enlace a
-//  POST /api/repo/load y el backend inyecta el codigo como
-//  contexto en las siguientes respuestas del chat.
+//  Asociado de forma exclusiva a cada conversación (chatId).
+//  Si se cambia de chat, se muestra el repo de ese chat.
+//  Si es un chat nuevo sin repo, funciona normal.
 // ============================================================
 (() => {
   'use strict';
@@ -874,26 +880,6 @@ function initConfirmModal() {
   const clearBtn = document.getElementById('repo-clear-btn');
   const statusEl = document.getElementById('repo-status');
   if (!form || !input || !loadBtn || !statusEl) return;
-
-  const SESSION_KEY = 'geminuel:repo-session';
-
-  function getSessionId() {
-    try {
-      let id = localStorage.getItem(SESSION_KEY);
-      if (!id) {
-        id = (window.crypto && crypto.randomUUID)
-          ? crypto.randomUUID()
-          : 'sess-' + Date.now() + '-' + Math.random().toString(16).slice(2);
-        localStorage.setItem(SESSION_KEY, id);
-      }
-      return id;
-    } catch {
-      return 'default';
-    }
-  }
-
-  // Compartida con engine.js para asociar el repo a la conversacion
-  window.GeminuelRepoSession = { id: getSessionId };
 
   function setStatus(text, kind = 'info') {
     statusEl.hidden = !text;
@@ -912,7 +898,7 @@ function initConfirmModal() {
     if (!repo) return;
     clearBtn.hidden = false;
     const bits = [
-      `Repositorio: ${repo.repo} (${repo.branch})`,
+      `Repositorio: ${repo.repo} (${repo.branch || 'main'})`,
       `${repo.fileCount} archivo${repo.fileCount === 1 ? '' : 's'}`,
       `${(repo.chars / 1000).toFixed(1)}k caracteres`,
     ];
@@ -926,6 +912,16 @@ function initConfirmModal() {
     setStatus('', 'info');
   }
 
+  // Sincroniza la barra de repositorio con la conversación activa
+  window.syncRepoUIForChat = function(chat) {
+    if (chat && chat.repo) {
+      input.value = chat.repo.url || '';
+      showRepo(chat.repo);
+    } else {
+      clearRepo();
+    }
+  };
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const url = input.value.trim();
@@ -936,12 +932,12 @@ function initConfirmModal() {
     }
 
     setBusy(true);
-    setStatus('Descargando repositorio...', 'info');
+    setStatus('Descargando y analizando repositorio...', 'info');
     try {
       const res = await fetch('/api/repo/load', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repoUrl: url, sessionId: getSessionId() }),
+        body: JSON.stringify({ repoUrl: url, chatId: state.currentChatId }),
       });
 
       let data = null;
@@ -950,6 +946,21 @@ function initConfirmModal() {
       if (!res.ok || !data || data.ok !== true) {
         const detail = (data && (data.detail || data.error)) || `Error ${res.status}`;
         throw new Error(detail);
+      }
+
+      if (data.chat && (!state.currentChatId || state.currentChatId !== data.chatId)) {
+        // Se creó una conversación nueva vinculada al repo
+        const idx = state.chats.findIndex(c => c.id === data.chat.id);
+        if (idx >= 0) {
+          state.chats[idx] = data.chat;
+        } else {
+          state.chats.push(data.chat);
+        }
+        renderChatList();
+        openChat(data.chat.id);
+      } else {
+        const chat = currentChat();
+        if (chat) chat.repo = data.repo;
       }
       showRepo(data.repo);
     } catch (err) {
@@ -963,19 +974,13 @@ function initConfirmModal() {
   clearBtn.addEventListener('click', async () => {
     clearBtn.disabled = true;
     try {
-      await fetch('/api/repo?sessionId=' + encodeURIComponent(getSessionId()), { method: 'DELETE' });
+      if (state.currentChatId) {
+        await fetch(`/api/repo?chatId=${state.currentChatId}`, { method: 'DELETE' });
+        const chat = currentChat();
+        if (chat) chat.repo = null;
+      }
     } catch { /* ignorar */ }
     clearBtn.disabled = false;
     clearRepo();
   });
-
-  // Restaura el estado si ya habia un repositorio cargado en esta sesion
-  (async () => {
-    try {
-      const res = await fetch('/api/repo/status?sessionId=' + encodeURIComponent(getSessionId()));
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data && data.ok && data.loaded && data.repo) showRepo(data.repo);
-    } catch { /* ignorar */ }
-  })();
 })();

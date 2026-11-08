@@ -12,5 +12,6 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Logs.
+# Logs y caché.
 *.log
+cache/

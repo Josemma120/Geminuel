@@ -18,7 +18,7 @@ window.GeminuelEngine = (() => {
   const ERROR_DEFAULT = 'Ocurrió un error al generar la respuesta. Verifica que `node server.js` esté corriendo y revisa la consola (F12).';
 
   // ==== 2. Cliente del servidor local ======================
-  async function callApi(userMessage, history, provider = 'cascade') {
+  async function callApi(userMessage, history, provider = 'cascade', chatId = null) {
     let res;
     try {
       res = await fetch('/api/chat', {
@@ -28,7 +28,7 @@ window.GeminuelEngine = (() => {
           userMessage,
           history,
           provider,
-          sessionId: (window.GeminuelRepoSession && window.GeminuelRepoSession.id()) || 'default',
+          chatId: chatId || null,
         }),
       });
     } catch {
@@ -60,10 +60,10 @@ window.GeminuelEngine = (() => {
 
   // ==== 3. API pública =====================================
   return {
-    // getResponse(mensaje, historial, provider) → { ok, text, warning?, provider, cascaded, fallbackReason }
-    async getResponse(userMessage, history = [], provider = 'cascade') {
+    // getResponse(mensaje, historial, provider, chatId) → { ok, text, warning?, provider, cascaded, fallbackReason }
+    async getResponse(userMessage, history = [], provider = 'cascade', chatId = null) {
       try {
-        const result = await callApi(userMessage, history, provider);
+        const result = await callApi(userMessage, history, provider, chatId);
         return {
           ok: true,
           text: result.text,
