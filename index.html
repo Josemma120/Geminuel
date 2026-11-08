@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg?v=3" />
   <link rel="alternate icon" type="image/svg+xml" href="favicon.svg?v=3" />
-  <link rel="stylesheet" href="css/style.css?v=19" />
+  <link rel="stylesheet" href="css/style.css?v=20" />
 </head>
 
 <body>
@@ -126,6 +126,24 @@
       </div>
     </header>
 
+    <!-- Analizador de repositorios de GitHub -->
+    <section class="repo-bar" id="repo-bar" aria-label="Analizar repositorio de GitHub">
+      <form class="repo-form" id="repo-form" autocomplete="off">
+        <span class="repo-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17">
+            <path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.55v-2.1c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .3.21.66.8.55A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/>
+          </svg>
+        </span>
+        <input class="repo-input" id="repo-url-input" type="text" inputmode="url"
+          placeholder="https://github.com/usuario/repositorio"
+          aria-label="Enlace del repositorio de GitHub" spellcheck="false" />
+        <button type="submit" class="repo-btn" id="repo-load-btn">Analizar repositorio</button>
+        <button type="button" class="repo-clear-btn" id="repo-clear-btn" title="Quitar repositorio del contexto"
+          aria-label="Quitar repositorio del contexto" hidden>Quitar</button>
+      </form>
+      <p class="repo-status" id="repo-status" role="status" aria-live="polite" hidden></p>
+    </section>
+
     <!-- Chat messages -->
     <section class="chat-area" id="chat-area" aria-label="Área de conversación">
 
@@ -234,8 +252,8 @@
     </div>
   </dialog>
 
-  <script src="js/engine.js?v=19"></script>
-  <script src="js/app.js?v=19"></script>
+  <script src="js/engine.js?v=20"></script>
+  <script src="js/app.js?v=20"></script>
 </body>
 
 </html>

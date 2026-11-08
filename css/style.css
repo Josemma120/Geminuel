@@ -1787,3 +1787,106 @@ textarea { resize: none; font-family: inherit; }
     transform: scale(0.95) translateY(6px);
   }
 }
+/* ============================================================
+   Analizador de repositorios de GitHub
+   ============================================================ */
+.repo-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.22));
+  background: var(--bg-panel, var(--bg-app, transparent));
+}
+
+.repo-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.repo-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted, #8b949e);
+  flex: 0 0 auto;
+}
+
+.repo-input {
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border, rgba(128, 128, 128, 0.3));
+  background: var(--bg-input, rgba(127, 127, 127, 0.08));
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.repo-input:focus {
+  border-color: var(--accent, #4f8cff);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #4f8cff) 22%, transparent);
+}
+
+.repo-input:disabled {
+  opacity: 0.6;
+}
+
+.repo-btn,
+.repo-clear-btn {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: filter 0.15s ease, opacity 0.15s ease;
+}
+
+.repo-btn {
+  background: var(--accent, #4f8cff);
+  color: #fff;
+}
+
+.repo-btn:hover:not(:disabled) { filter: brightness(1.08); }
+
+.repo-btn:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
+
+.repo-clear-btn {
+  background: transparent;
+  border-color: var(--border, rgba(128, 128, 128, 0.35));
+  color: inherit;
+}
+
+.repo-clear-btn:hover:not(:disabled) {
+  border-color: var(--accent, #4f8cff);
+  color: var(--accent, #4f8cff);
+}
+
+.repo-status {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-muted, #8b949e);
+  word-break: break-word;
+}
+
+.repo-status[data-kind="ok"] { color: var(--accent, #4f8cff); }
+.repo-status[data-kind="error"] { color: var(--danger, #f85149); }
+
+@media (max-width: 640px) {
+  .repo-bar { padding: 8px 12px; }
+  .repo-input { flex: 1 1 100%; }
+  .repo-btn, .repo-clear-btn { flex: 1 1 auto; }
+}

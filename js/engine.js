@@ -24,7 +24,12 @@ window.GeminuelEngine = (() => {
       res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userMessage, history, provider }),
+        body: JSON.stringify({
+          userMessage,
+          history,
+          provider,
+          sessionId: (window.GeminuelRepoSession && window.GeminuelRepoSession.id()) || 'default',
+        }),
       });
     } catch {
       const err = new Error('El servidor local no responde');

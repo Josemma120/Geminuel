@@ -858,3 +858,124 @@ function initConfirmModal() {
   }
   inputEl.focus();
 })();
+// ============================================================
+//  Geminuel — Analizador de repositorios de GitHub
+// ============================================================
+//  UI independiente del resto de app.js: envia el enlace a
+//  POST /api/repo/load y el backend inyecta el codigo como
+//  contexto en las siguientes respuestas del chat.
+// ============================================================
+(() => {
+  'use strict';
+
+  const form = document.getElementById('repo-form');
+  const input = document.getElementById('repo-url-input');
+  const loadBtn = document.getElementById('repo-load-btn');
+  const clearBtn = document.getElementById('repo-clear-btn');
+  const statusEl = document.getElementById('repo-status');
+  if (!form || !input || !loadBtn || !statusEl) return;
+
+  const SESSION_KEY = 'geminuel:repo-session';
+
+  function getSessionId() {
+    try {
+      let id = localStorage.getItem(SESSION_KEY);
+      if (!id) {
+        id = (window.crypto && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : 'sess-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+        localStorage.setItem(SESSION_KEY, id);
+      }
+      return id;
+    } catch {
+      return 'default';
+    }
+  }
+
+  // Compartida con engine.js para asociar el repo a la conversacion
+  window.GeminuelRepoSession = { id: getSessionId };
+
+  function setStatus(text, kind = 'info') {
+    statusEl.hidden = !text;
+    statusEl.textContent = text || '';
+    statusEl.dataset.kind = kind;
+  }
+
+  function setBusy(busy) {
+    loadBtn.disabled = busy;
+    input.disabled = busy;
+    loadBtn.textContent = busy ? 'Analizando...' : 'Analizar repositorio';
+    form.setAttribute('aria-busy', busy ? 'true' : 'false');
+  }
+
+  function showRepo(repo) {
+    if (!repo) return;
+    clearBtn.hidden = false;
+    const bits = [
+      `Repositorio: ${repo.repo} (${repo.branch})`,
+      `${repo.fileCount} archivo${repo.fileCount === 1 ? '' : 's'}`,
+      `${(repo.chars / 1000).toFixed(1)}k caracteres`,
+    ];
+    if (repo.truncated) bits.push('contexto recortado');
+    setStatus(bits.join(' · '), 'ok');
+  }
+
+  function clearRepo() {
+    clearBtn.hidden = true;
+    input.value = '';
+    setStatus('', 'info');
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const url = input.value.trim();
+    if (!url) {
+      setStatus('Pega el enlace de un repositorio de GitHub.', 'error');
+      input.focus();
+      return;
+    }
+
+    setBusy(true);
+    setStatus('Descargando repositorio...', 'info');
+    try {
+      const res = await fetch('/api/repo/load', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repoUrl: url, sessionId: getSessionId() }),
+      });
+
+      let data = null;
+      try { data = await res.json(); } catch { /* respuesta sin JSON */ }
+
+      if (!res.ok || !data || data.ok !== true) {
+        const detail = (data && (data.detail || data.error)) || `Error ${res.status}`;
+        throw new Error(detail);
+      }
+      showRepo(data.repo);
+    } catch (err) {
+      clearBtn.hidden = true;
+      setStatus(err && err.message ? err.message : 'No se pudo analizar el repositorio.', 'error');
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  clearBtn.addEventListener('click', async () => {
+    clearBtn.disabled = true;
+    try {
+      await fetch('/api/repo?sessionId=' + encodeURIComponent(getSessionId()), { method: 'DELETE' });
+    } catch { /* ignorar */ }
+    clearBtn.disabled = false;
+    clearRepo();
+  });
+
+  // Restaura el estado si ya habia un repositorio cargado en esta sesion
+  (async () => {
+    try {
+      const res = await fetch('/api/repo/status?sessionId=' + encodeURIComponent(getSessionId()));
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.ok && data.loaded && data.repo) showRepo(data.repo);
+    } catch { /* ignorar */ }
+  })();
+})();
