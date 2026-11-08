@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 //  Geminuel — Interfaz (lógica de UI)
 // ============================================================
 //  Maneja DOM, estado de conversaciones y renderizado.
@@ -101,7 +101,7 @@ function applyTheme() {
 
 function setProvider() {
   state.provider = 'cascade';
-  inputEl.placeholder = 'Escribe un mensaje a Geminuel...';
+  inputEl.placeholder = 'Escribe un mensaje a MonseNuel...';
 }
 
 // ---- Chat helpers ----
@@ -342,10 +342,10 @@ function aiBlockHTML(content) {
   return `
     <div class="message-inner">
       <div class="ai-header">
-        <div class="ai-avatar" title="Geminuel">
+        <div class="ai-avatar" title="MonseNuel">
           <span class="ai-avatar-glyph" aria-hidden="true">G</span>
         </div>
-        <span class="ai-name">Geminuel</span>
+        <span class="ai-name"><span class="brand-monse">Monse</span><span class="brand-nuel">Nuel</span></span>
       </div>
       <div class="ai-content">${parseMarkdown(content)}</div>
       <div class="message-actions">
@@ -400,10 +400,10 @@ function renderTyping() {
   el.innerHTML = `
     <div class="message-inner">
       <div class="ai-header">
-        <div class="ai-avatar" title="Geminuel">
+        <div class="ai-avatar" title="MonseNuel">
           <span class="ai-avatar-glyph" aria-hidden="true">G</span>
         </div>
-        <span class="ai-name">Geminuel</span>
+        <span class="ai-name"><span class="brand-monse">Monse</span><span class="brand-nuel">Nuel</span></span>
       </div>
       <div class="xbox-thinking-container">
         <div class="xbox-thinking-orb-wrap">
@@ -437,10 +437,10 @@ async function streamAIResponse(text, typingEl, warning) {
   // Replace typing dots with content container
   inner.innerHTML = `
     <div class="ai-header">
-      <div class="ai-avatar" title="Geminuel">
+      <div class="ai-avatar" title="MonseNuel">
         <span class="ai-avatar-glyph" aria-hidden="true">G</span>
       </div>
-      <span class="ai-name">Geminuel</span>
+      <span class="ai-name"><span class="brand-monse">Monse</span><span class="brand-nuel">Nuel</span></span>
     </div>
     ${warning ? `<div class="api-warning" role="alert">${escapeHtml(warning)}</div>` : ''}
     <div class="ai-content"></div>
@@ -655,7 +655,7 @@ function startXboxSplash() {
   const btn = document.getElementById('xbox-splash-button');
   if (btn) btn.classList.remove('flare');
 
-  if (xboxStatusText) xboxStatusText.textContent = 'Iniciando Geminuel...';
+  if (xboxStatusText) xboxStatusText.textContent = 'Iniciando MonseNuel...';
 
   setTimeout(() => {
     if (!splashDismissed && xboxStatusText) {

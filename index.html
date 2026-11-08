@@ -1,24 +1,24 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Geminuel — Tu asistente de IA</title>
+  <title>MonseNuel — Tu asistente de IA</title>
   <meta name="description"
-    content="Geminuel es tu asistente de inteligencia artificial personal. Conversaciones naturales, respuestas inteligentes." />
+    content="MonseNuel es tu asistente de inteligencia artificial personal. Conversaciones naturales, respuestas inteligentes." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=3" />
-  <link rel="alternate icon" type="image/svg+xml" href="favicon.svg?v=3" />
-  <link rel="stylesheet" href="css/style.css?v=20" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=4" />
+  <link rel="alternate icon" type="image/svg+xml" href="favicon.svg?v=4" />
+  <link rel="stylesheet" href="css/style.css?v=22" />
 </head>
 
 <body>
 
   <!-- Startup Splash Screen -->
-  <div id="xbox-splash" class="xbox-splash" role="dialog" aria-modal="true" aria-label="Inicio Geminuel">
+  <div id="xbox-splash" class="xbox-splash" role="dialog" aria-modal="true" aria-label="Inicio MonseNuel">
     <div class="xbox-splash-backdrop"></div>
     <div class="xbox-splash-stage">
       <div class="xbox-guide-orb-wrap">
@@ -28,15 +28,15 @@
         <div class="xbox-guide-sphere" id="xbox-splash-button" title="Haz clic para iniciar ya">
           <div class="xbox-sphere-sheen"></div>
           <div class="geminuel-guide-g" aria-hidden="true">
-            <span class="guide-g-char">G</span><span class="guide-g-cursor"></span>
+            <span class="guide-g-char">M</span><span class="guide-g-cursor"></span>
           </div>
         </div>
       </div>
       <div class="xbox-splash-info">
-        <h2 class="xbox-splash-title">GEMINUEL</h2>
+        <h2 class="xbox-splash-title"><span class="brand-monse">MONSE</span><span class="brand-nuel">NUEL</span></h2>
         <div class="xbox-splash-status" role="status" aria-live="polite">
           <span class="xbox-status-dot" aria-hidden="true"></span>
-          <span class="xbox-status-text" id="xbox-status-text">Iniciando Geminuel...</span>
+          <span class="xbox-status-text" id="xbox-status-text">Iniciando MonseNuel...</span>
         </div>
       </div>
       <button class="xbox-splash-skip" id="xbox-splash-skip" aria-label="Saltar intro">Saltar intro [Esc]</button>
@@ -90,9 +90,9 @@
       </button>
 
       <h1 class="topbar-title" id="topbar-title">
-        <span class="logo-terminal" aria-hidden="true"><span class="logo-glyph">G</span><span
+        <span class="logo-terminal" aria-hidden="true"><span class="logo-glyph">M</span><span
             class="logo-cursor"></span></span>
-        Geminuel
+        <span class="brand-monse">Monse</span><span class="brand-nuel">Nuel</span>
         <span class="topbar-chat-title" id="topbar-chat-title" hidden></span>
       </h1>
 
@@ -149,31 +149,30 @@
 
       <!-- Welcome screen (shown when no messages) -->
       <section class="welcome" id="welcome-screen" aria-label="Bienvenida y sugerencias">
-        <pre class="ascii-logo" aria-label="GEMINUEL">
-  ____ _____ __  __ ___ _  _ _   _ _____ _     
- / ___| ____|  \/  |_ _| \| | | | | ____| |    
-| |  _|  _| | |\/| || || .` | | | |  _| | |    
-| |_| | |___| |  | || || |\  | |_| | |___| |___
- \____|_____|_|  |_|___|_| \_|\___/|_____|_____|</pre>
+        <pre class="ascii-logo" aria-label="MONSENUEL">
+ __  __  ___  _  _ ____  ___  _  _ _   _ ___  _     
+|  \/  |/ _ \| \| / ___|| __|| \| | | | | __|| |    
+| |\/| | (_) | .` \__ \ | _| | .` | |_| | _| | |___ 
+|_|  |_|\___/|_|\_|___/ |___||_|\_|\___/|___|_|_____|</pre>
         <p class="welcome-subtitle">&gt; ¿En qué puedo ayudarte hoy?</p>
         <div class="suggestion-list" role="group" aria-label="Sugerencias de inicio rápido">
           <button class="suggestion-card terminal-prompt" data-prompt="Revisa este código y encuentra posibles bugs">
-            <span class="prompt-prefix">~/geminuel &gt;</span>
+            <span class="prompt-prefix">~/monsenuel &gt;</span>
             <span class="prompt-text">Encontrar bugs en código</span>
           </button>
           <button class="suggestion-card terminal-prompt"
             data-prompt="Ayúdame a diseñar la arquitectura para una app web escalable">
-            <span class="prompt-prefix">~/geminuel &gt;</span>
+            <span class="prompt-prefix">~/monsenuel &gt;</span>
             <span class="prompt-text">Diseño de arquitectura</span>
           </button>
           <button class="suggestion-card terminal-prompt"
             data-prompt="¿Cómo puedo refactorizar esta función para mejorar su rendimiento?">
-            <span class="prompt-prefix">~/geminuel &gt;</span>
+            <span class="prompt-prefix">~/monsenuel &gt;</span>
             <span class="prompt-text">Optimizar rendimiento</span>
           </button>
           <button class="suggestion-card terminal-prompt"
             data-prompt="Explícame cómo funciona el algoritmo de Dijkstra paso a paso">
-            <span class="prompt-prefix">~/geminuel &gt;</span>
+            <span class="prompt-prefix">~/monsenuel &gt;</span>
             <span class="prompt-text">Explicar un algoritmo</span>
           </button>
         </div>
@@ -187,8 +186,8 @@
     <!-- Input area -->
     <footer class="input-area" role="region" aria-label="Barra de envío de mensajes">
       <form class="input-wrapper" id="chat-form">
-        <textarea id="message-input" class="message-input" placeholder="Escribe un mensaje a Geminuel..." rows="1"
-          aria-label="Escribe tu mensaje para Geminuel"></textarea>
+        <textarea id="message-input" class="message-input" placeholder="Escribe un mensaje a MonseNuel..." rows="1"
+          aria-label="Escribe tu mensaje para MonseNuel"></textarea>
         <div class="input-actions">
           <span class="char-counter" id="char-counter" aria-live="polite"></span>
           <button type="submit" class="send-btn" id="send-btn" aria-label="Enviar mensaje" disabled>
@@ -200,7 +199,7 @@
           </button>
         </div>
       </form>
-      <p class="input-disclaimer">Geminuel puede cometer errores. Verifica la información.</p>
+      <p class="input-disclaimer">MonseNuel puede cometer errores. Verifica la información.</p>
     </footer>
 
   </main>

@@ -2,22 +2,28 @@
   <defs>
     <!-- Background Orb Radial Gradient -->
     <radialGradient id="orbGrad" cx="35%" cy="30%" r="70%">
-      <stop offset="0%" stop-color="#2a324b"/>
-      <stop offset="55%" stop-color="#121622"/>
-      <stop offset="100%" stop-color="#07090f"/>
+      <stop offset="0%" stop-color="#1a0a2e"/>
+      <stop offset="55%" stop-color="#0a0a1a"/>
+      <stop offset="100%" stop-color="#07070f"/>
     </radialGradient>
-    
-    <!-- Neon Outer Ring Gradient -->
+
+    <!-- Neon Outer Ring Gradient (rosa → azul) -->
     <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#8ab4f8"/>
-      <stop offset="50%" stop-color="#4285f4"/>
-      <stop offset="100%" stop-color="#c58af9"/>
+      <stop offset="0%" stop-color="#f72585"/>
+      <stop offset="50%" stop-color="#b5179e"/>
+      <stop offset="100%" stop-color="#4361ee"/>
     </linearGradient>
 
-    <!-- Glyph Gradient -->
-    <linearGradient id="glyphGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#8ab4f8"/>
-      <stop offset="100%" stop-color="#c58af9"/>
+    <!-- M glyph (rosa) -->
+    <linearGradient id="glyphGradM" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f72585"/>
+      <stop offset="100%" stop-color="#ff70b8"/>
+    </linearGradient>
+
+    <!-- N glyph (azul) -->
+    <linearGradient id="glyphGradN" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4361ee"/>
+      <stop offset="100%" stop-color="#7a9fff"/>
     </linearGradient>
 
     <!-- Glow Filter -->
@@ -35,16 +41,25 @@
 
   <!-- Inner 3D Sphere -->
   <circle cx="32" cy="32" r="28" fill="url(#orbGrad)"/>
-  
-  <!-- Specular Dome Highlight -->
-  <path d="M 12,24 C 18,13 46,13 52,24 C 44,18 20,18 12,24 Z" fill="white" opacity="0.28"/>
 
-  <!-- Centered Hero Monogram G -->
-  <text x="32" y="44.5" 
-        font-family="'Consolas', 'JetBrains Mono', 'Fira Code', 'Segoe UI', monospace" 
-        font-size="38" 
-        font-weight="900" 
-        fill="url(#glyphGrad)" 
+  <!-- Specular Dome Highlight -->
+  <path d="M 12,24 C 18,13 46,13 52,24 C 44,18 20,18 12,24 Z" fill="white" opacity="0.22"/>
+
+  <!-- M (rosa) - left half -->
+  <text x="20" y="44"
+        font-family="'Consolas', 'JetBrains Mono', 'Segoe UI', monospace"
+        font-size="26"
+        font-weight="900"
+        fill="url(#glyphGradM)"
         text-anchor="middle"
-        filter="url(#glow)">G</text>
+        filter="url(#glow)">M</text>
+
+  <!-- N (azul) - right half -->
+  <text x="44" y="44"
+        font-family="'Consolas', 'JetBrains Mono', 'Segoe UI', monospace"
+        font-size="26"
+        font-weight="900"
+        fill="url(#glyphGradN)"
+        text-anchor="middle"
+        filter="url(#glow)">N</text>
 </svg>
