@@ -1,6 +1,9 @@
 # No subir al repositorio: contiene la API key.
 .env
 
+# Entorno virtual de Python
+.venv/
+
 # Historial de chats (datos personales del usuario).
 chats.json
 
