@@ -6,7 +6,7 @@ echo.
 
 if exist .venv\Scripts\python.exe (
     echo Usando entorno virtual .venv...
-    echo Iniciando servidor en http://localhost:8000
+    echo Iniciando servidor en http://localhost:8080
     echo Presiona Ctrl+C para detener.
     echo.
     .venv\Scripts\python.exe server.py
@@ -17,7 +17,7 @@ if exist .venv\Scripts\python.exe (
 where uv >nul 2>nul
 if %errorlevel% equ 0 (
     echo Usando uv para iniciar el servidor...
-    echo Iniciando servidor en http://localhost:8000
+    echo Iniciando servidor en http://localhost:8080
     uv run server.py
     pause
     exit /b
@@ -26,7 +26,7 @@ if %errorlevel% equ 0 (
 echo Instalando/verificando dependencias...
 pip install -r requirements.txt -q
 echo.
-echo Iniciando servidor en http://localhost:8000
+echo Iniciando servidor en http://localhost:8080
 echo Presiona Ctrl+C para detener.
 echo.
 python server.py
