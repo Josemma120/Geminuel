@@ -184,6 +184,25 @@ function parseMarkdown(text) {
   return html;
 }
 
+function parseStreamingMarkdown(text) {
+  let patched = text;
+  if (patched.includes('<think>') && !patched.includes('</think>')) {
+    patched += '</think>';
+  }
+  const codeMarkers = (patched.match(/```/g) || []).length;
+  if (codeMarkers % 2 !== 0) {
+    patched += '\n```';
+  }
+  return parseMarkdown(patched);
+}
+
+function getElementChatAreaTop(el) {
+  if (!el) return 0;
+  const chatRect = chatArea.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+  return chatArea.scrollTop + (elRect.top - chatRect.top);
+}
+
 function scrollToBottom(smooth = true) {
   chatArea.scrollTo({ top: chatArea.scrollHeight, behavior: smooth ? 'smooth' : 'instant' });
 }
@@ -376,6 +395,7 @@ function renderLoadedMessage(role, content) {
   }
 
   messagesEl.appendChild(el);
+  return el;
 }
 
 function bindCopy(btn, text) {
@@ -431,7 +451,7 @@ function renderTyping() {
 }
 
 // ---- Stream AI text character by character ----
-async function streamAIResponse(text, typingEl, warning) {
+async function streamAIResponse(text, typingEl, warning, userEl = null) {
   const inner = typingEl.querySelector('.message-inner');
 
   // Replace typing dots with content container
@@ -456,19 +476,76 @@ async function streamAIResponse(text, typingEl, warning) {
 
   const contentEl = typingEl.querySelector('.ai-content');
 
-  // Stream character by character
+  // Determinar el elemento ancla para posicionar la vista al inicio
+  // Si la pregunta del usuario es breve (< 220px), anclamos en la pregunta;
+  // si es un bloque extenso, anclamos directamente al inicio de la respuesta IA.
+  const scrollAnchor = (userEl && userEl.offsetHeight < 220) ? userEl : typingEl;
+
+  const getDesiredScroll = () => {
+    const elTop = getElementChatAreaTop(scrollAnchor);
+    return Math.max(0, elTop - 16);
+  };
+
+  // Posicionar suavemente la vista al inicio de la consulta / respuesta
+  let desiredScroll = getDesiredScroll();
+  chatArea.scrollTo({ top: desiredScroll, behavior: 'smooth' });
+
+  // Si el usuario hace scroll manual durante la respuesta, no interrumpir su lectura
+  let userManuallyScrolled = false;
+  const onUserWheel = () => { userManuallyScrolled = true; };
+  chatArea.addEventListener('wheel', onUserWheel, { passive: true });
+  chatArea.addEventListener('touchmove', onUserWheel, { passive: true });
+
+  // Permitir acelerar o finalizar con un clic sobre el mensaje
+  let skipStreaming = false;
+  const onSkipClick = () => { skipStreaming = true; };
+  typingEl.addEventListener('click', onSkipClick, { once: true });
+
+  // Velocidad de escritura natural y adaptativa
+  let chunkSize = 3;
+  if (text.length > 800) chunkSize = 5;
+  if (text.length > 2000) chunkSize = 8;
+
   let displayed = '';
-  const chunkSize = 20;
   for (let i = 0; i < text.length; i += chunkSize) {
-    displayed += text.slice(i, i + chunkSize);
-    contentEl.innerHTML = parseMarkdown(displayed) + '<span class="cursor"></span>';
-    scrollToBottom(false);
-    await new Promise(r => setTimeout(r, 6 + Math.random() * 6));
+    if (skipStreaming) {
+      displayed = text;
+      break;
+    }
+
+    const chunk = text.slice(i, i + chunkSize);
+    displayed += chunk;
+    contentEl.innerHTML = parseStreamingMarkdown(displayed) + '<span class="cursor"></span>';
+
+    // Mantener la vista anclada al inicio mientras el contenido crece hacia abajo
+    if (!userManuallyScrolled) {
+      desiredScroll = getDesiredScroll();
+      if (chatArea.scrollTop < desiredScroll) {
+        chatArea.scrollTop = Math.min(desiredScroll, chatArea.scrollHeight - chatArea.clientHeight);
+      }
+    }
+
+    // Ritmo con micropausas en puntuaciones y saltos de línea para sensación humana/real
+    let delay = 18 + Math.random() * 8; // ~22ms
+    if (chunk.includes('\n') || chunk.includes('. ') || chunk.includes('? ') || chunk.includes('! ')) {
+      delay += 25;
+    }
+    await new Promise(r => setTimeout(r, delay));
   }
 
-  // Final render without cursor
+  // Limpiar escuchadores
+  chatArea.removeEventListener('wheel', onUserWheel);
+  chatArea.removeEventListener('touchmove', onUserWheel);
+  typingEl.removeEventListener('click', onSkipClick);
+
+  // Render final completo sin cursor
   contentEl.innerHTML = parseMarkdown(text);
   typingEl.removeAttribute('id');
+
+  // Asegurar que al terminar la respuesta la vista quede exactamente al inicio
+  if (!userManuallyScrolled) {
+    chatArea.scrollTo({ top: getDesiredScroll(), behavior: 'smooth' });
+  }
 
   // Bind copy button
   const copyBtn = typingEl.querySelector('.copy-btn');
@@ -505,7 +582,7 @@ async function sendMessage(text) {
   welcomeScreen.style.display = 'none';
 
   // Render user message
-  renderLoadedMessage('user', text);
+  const userEl = renderLoadedMessage('user', text);
   renderChatList();
   updateTopbarTitle();
 
@@ -528,11 +605,12 @@ async function sendMessage(text) {
   // Get response through the automatic cascade
   const result = await GeminuelEngine.getResponse(text, chat.messages, 'cascade', state.currentChatId);
 
-  // Stream response
+  // Stream response con vista anclada al inicio
   await streamAIResponse(
     result.text,
     typingEl,
-    result.ok ? null : result.warning
+    result.ok ? null : result.warning,
+    userEl
   );
 
   // Solo se guarda en el historial una respuesta real
@@ -551,7 +629,6 @@ async function sendMessage(text) {
   sendBtn.disabled = inputEl.value.trim() === '';
   renderChatList();
   updateSidebarForTyping();
-  scrollToBottom();
 }
 
 // ---- Input auto-resize ----
