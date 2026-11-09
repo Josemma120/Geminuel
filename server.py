@@ -1,4 +1,4 @@
-﻿"""
+"""
 Geminuel — Servidor Python (FastAPI)
 =============================================
 Reemplaza server.js. Implementa:
