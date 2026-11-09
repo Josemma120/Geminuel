@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 //  Geminuel — Interfaz (lógica de UI)
 // ============================================================
 //  Maneja DOM, estado de conversaciones y renderizado.
@@ -362,7 +362,7 @@ function aiBlockHTML(content) {
     <div class="message-inner">
       <div class="ai-header">
         <div class="ai-avatar" title="MonseNuel">
-          <span class="ai-avatar-glyph" aria-hidden="true">G</span>
+          <span class="ai-avatar-glyph" aria-hidden="true">M</span>
         </div>
         <span class="ai-name"><span class="brand-monse">Monse</span><span class="brand-nuel">Nuel</span></span>
       </div>
@@ -421,7 +421,7 @@ function renderTyping() {
     <div class="message-inner">
       <div class="ai-header">
         <div class="ai-avatar" title="MonseNuel">
-          <span class="ai-avatar-glyph" aria-hidden="true">G</span>
+          <span class="ai-avatar-glyph" aria-hidden="true">M</span>
         </div>
         <span class="ai-name"><span class="brand-monse">Monse</span><span class="brand-nuel">Nuel</span></span>
       </div>
@@ -432,7 +432,7 @@ function renderTyping() {
           <div class="xbox-thinking-sphere">
             <div class="xbox-sphere-sheen mini"></div>
             <div class="thinking-guide-g" aria-hidden="true">
-              <span class="thinking-g-char">G</span><span class="thinking-g-cursor"></span>
+              <span class="thinking-g-char">M</span><span class="thinking-g-cursor"></span>
             </div>
           </div>
         </div>
@@ -458,7 +458,7 @@ async function streamAIResponse(text, typingEl, warning, userEl = null) {
   inner.innerHTML = `
     <div class="ai-header">
       <div class="ai-avatar" title="MonseNuel">
-        <span class="ai-avatar-glyph" aria-hidden="true">G</span>
+        <span class="ai-avatar-glyph" aria-hidden="true">M</span>
       </div>
       <span class="ai-name"><span class="brand-monse">Monse</span><span class="brand-nuel">Nuel</span></span>
     </div>
