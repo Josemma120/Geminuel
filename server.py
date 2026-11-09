@@ -201,8 +201,12 @@ async def _detect_groq_models() -> list[str]:
                 ]
                 _GROQ_DETECTED_MODELS = chat_models
                 if chat_models:
+                    preferred = [
+                        m for m in chat_models
+                        if any(p in m.lower() for p in ["llama", "qwen", "deepseek", "gpt-oss", "mixtral"])
+                    ]
                     if _GROQ_ACTIVE_MODEL not in chat_models:
-                        _GROQ_ACTIVE_MODEL = chat_models[0]
+                        _GROQ_ACTIVE_MODEL = preferred[0] if preferred else chat_models[0]
                     print(f"[Groq] Modelos de chat disponibles en tu cuenta ({len(chat_models)}): {chat_models}")
                     print(f"[Groq] Modelo activo asignado: {_GROQ_ACTIVE_MODEL}")
                 else:
