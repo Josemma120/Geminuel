@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 //  Geminuel — Interfaz (lógica de UI)
 // ============================================================
 //  Maneja DOM, estado de conversaciones y renderizado.
@@ -101,7 +101,7 @@ function applyTheme() {
 
 function setProvider() {
   state.provider = 'cascade';
-  inputEl.placeholder = 'Escribe un mensaje a Geminuel...';
+  inputEl.placeholder = 'Escribe un mensaje a MonseNuel...';
 }
 
 // ---- Chat helpers ----
@@ -214,6 +214,7 @@ sidebarOverlay.addEventListener('click', hideSidebar);
 newChatBtn.addEventListener('click', () => {
   startNewChat();
   if (isMobile()) hideSidebar();
+
 });
 
 inputEl.addEventListener('input', updateSidebarForTyping);
@@ -311,6 +312,7 @@ function openChat(id) {
   const chat = state.chats.find(c => c.id === id);
   if (!chat) return;
   state.currentChatId = id;
+  if (window.syncRepoUIForChat) window.syncRepoUIForChat(chat);
   updateTopbarTitle();
   welcomeScreen.style.display = 'none';
   messagesEl.innerHTML = '';
@@ -318,10 +320,12 @@ function openChat(id) {
   renderChatList();
   scrollToBottom(false);
   if (isMobile()) hideSidebar();
+
 }
 
 function startNewChat() {
   state.currentChatId = null;
+  if (window.syncRepoUIForChat) window.syncRepoUIForChat(null);
   updateTopbarTitle();
   welcomeScreen.style.display = '';
   messagesEl.innerHTML = '';
@@ -338,10 +342,10 @@ function aiBlockHTML(content) {
   return `
     <div class="message-inner">
       <div class="ai-header">
-        <div class="ai-avatar" title="Geminuel">
+        <div class="ai-avatar" title="MonseNuel">
           <span class="ai-avatar-glyph" aria-hidden="true">G</span>
         </div>
-        <span class="ai-name">Geminuel</span>
+        <span class="ai-name"><span class="brand-monse">Monse</span><span class="brand-nuel">Nuel</span></span>
       </div>
       <div class="ai-content">${parseMarkdown(content)}</div>
       <div class="message-actions">
@@ -396,10 +400,10 @@ function renderTyping() {
   el.innerHTML = `
     <div class="message-inner">
       <div class="ai-header">
-        <div class="ai-avatar" title="Geminuel">
+        <div class="ai-avatar" title="MonseNuel">
           <span class="ai-avatar-glyph" aria-hidden="true">G</span>
         </div>
-        <span class="ai-name">Geminuel</span>
+        <span class="ai-name"><span class="brand-monse">Monse</span><span class="brand-nuel">Nuel</span></span>
       </div>
       <div class="xbox-thinking-container">
         <div class="xbox-thinking-orb-wrap">
@@ -433,10 +437,10 @@ async function streamAIResponse(text, typingEl, warning) {
   // Replace typing dots with content container
   inner.innerHTML = `
     <div class="ai-header">
-      <div class="ai-avatar" title="Geminuel">
+      <div class="ai-avatar" title="MonseNuel">
         <span class="ai-avatar-glyph" aria-hidden="true">G</span>
       </div>
-      <span class="ai-name">Geminuel</span>
+      <span class="ai-name"><span class="brand-monse">Monse</span><span class="brand-nuel">Nuel</span></span>
     </div>
     ${warning ? `<div class="api-warning" role="alert">${escapeHtml(warning)}</div>` : ''}
     <div class="ai-content"></div>
@@ -522,7 +526,7 @@ async function sendMessage(text) {
   scrollToBottom();
 
   // Get response through the automatic cascade
-  const result = await GeminuelEngine.getResponse(text, chat.messages, 'cascade');
+  const result = await GeminuelEngine.getResponse(text, chat.messages, 'cascade', state.currentChatId);
 
   // Stream response
   await streamAIResponse(
@@ -651,7 +655,7 @@ function startXboxSplash() {
   const btn = document.getElementById('xbox-splash-button');
   if (btn) btn.classList.remove('flare');
 
-  if (xboxStatusText) xboxStatusText.textContent = 'Iniciando Geminuel...';
+  if (xboxStatusText) xboxStatusText.textContent = 'Iniciando MonseNuel...';
 
   setTimeout(() => {
     if (!splashDismissed && xboxStatusText) {
@@ -836,6 +840,7 @@ function initConfirmModal() {
   applyTheme();
   setProvider();
   if (isMobile()) hideSidebar();
+
   initXboxSplash();
   initConfirmModal();
 
@@ -857,4 +862,125 @@ function initConfirmModal() {
     startNewChat();
   }
   inputEl.focus();
+})();
+
+// ============================================================
+//  Geminuel — Analizador de repositorios de GitHub
+// ============================================================
+//  Asociado de forma exclusiva a cada conversación (chatId).
+//  Si se cambia de chat, se muestra el repo de ese chat.
+//  Si es un chat nuevo sin repo, funciona normal.
+// ============================================================
+(() => {
+  'use strict';
+
+  const form = document.getElementById('repo-form');
+  const input = document.getElementById('repo-url-input');
+  const loadBtn = document.getElementById('repo-load-btn');
+  const clearBtn = document.getElementById('repo-clear-btn');
+  const statusEl = document.getElementById('repo-status');
+  if (!form || !input || !loadBtn || !statusEl) return;
+
+  function setStatus(text, kind = 'info') {
+    statusEl.hidden = !text;
+    statusEl.textContent = text || '';
+    statusEl.dataset.kind = kind;
+  }
+
+  function setBusy(busy) {
+    loadBtn.disabled = busy;
+    input.disabled = busy;
+    loadBtn.textContent = busy ? 'Analizando...' : 'Analizar repositorio';
+    form.setAttribute('aria-busy', busy ? 'true' : 'false');
+  }
+
+  function showRepo(repo) {
+    if (!repo) return;
+    clearBtn.hidden = false;
+    const bits = [
+      `Repositorio: ${repo.repo} (${repo.branch || 'main'})`,
+      `${repo.fileCount} archivo${repo.fileCount === 1 ? '' : 's'}`,
+      `${(repo.chars / 1000).toFixed(1)}k caracteres`,
+    ];
+    if (repo.truncated) bits.push('contexto recortado');
+    setStatus(bits.join(' · '), 'ok');
+  }
+
+  function clearRepo() {
+    clearBtn.hidden = true;
+    input.value = '';
+    setStatus('', 'info');
+  }
+
+  // Sincroniza la barra de repositorio con la conversación activa
+  window.syncRepoUIForChat = function(chat) {
+    if (chat && chat.repo) {
+      input.value = chat.repo.url || '';
+      showRepo(chat.repo);
+    } else {
+      clearRepo();
+    }
+  };
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const url = input.value.trim();
+    if (!url) {
+      setStatus('Pega el enlace de un repositorio de GitHub.', 'error');
+      input.focus();
+      return;
+    }
+
+    setBusy(true);
+    setStatus('Descargando y analizando repositorio...', 'info');
+    try {
+      const res = await fetch('/api/repo/load', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repoUrl: url, chatId: state.currentChatId }),
+      });
+
+      let data = null;
+      try { data = await res.json(); } catch { /* respuesta sin JSON */ }
+
+      if (!res.ok || !data || data.ok !== true) {
+        const detail = (data && (data.detail || data.error)) || `Error ${res.status}`;
+        throw new Error(detail);
+      }
+
+      if (data.chat && (!state.currentChatId || state.currentChatId !== data.chatId)) {
+        // Se creó una conversación nueva vinculada al repo
+        const idx = state.chats.findIndex(c => c.id === data.chat.id);
+        if (idx >= 0) {
+          state.chats[idx] = data.chat;
+        } else {
+          state.chats.push(data.chat);
+        }
+        renderChatList();
+        openChat(data.chat.id);
+      } else {
+        const chat = currentChat();
+        if (chat) chat.repo = data.repo;
+      }
+      showRepo(data.repo);
+    } catch (err) {
+      clearBtn.hidden = true;
+      setStatus(err && err.message ? err.message : 'No se pudo analizar el repositorio.', 'error');
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  clearBtn.addEventListener('click', async () => {
+    clearBtn.disabled = true;
+    try {
+      if (state.currentChatId) {
+        await fetch(`/api/repo?chatId=${state.currentChatId}`, { method: 'DELETE' });
+        const chat = currentChat();
+        if (chat) chat.repo = null;
+      }
+    } catch { /* ignorar */ }
+    clearBtn.disabled = false;
+    clearRepo();
+  });
 })();

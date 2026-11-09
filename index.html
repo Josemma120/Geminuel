@@ -1,24 +1,24 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Geminuel — Tu asistente de IA</title>
+  <title>MonseNuel — Tu asistente de IA</title>
   <meta name="description"
-    content="Geminuel es tu asistente de inteligencia artificial personal. Conversaciones naturales, respuestas inteligentes." />
+    content="MonseNuel es tu asistente de inteligencia artificial personal. Conversaciones naturales, respuestas inteligentes." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=3" />
-  <link rel="alternate icon" type="image/svg+xml" href="favicon.svg?v=3" />
-  <link rel="stylesheet" href="css/style.css?v=19" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=4" />
+  <link rel="alternate icon" type="image/svg+xml" href="favicon.svg?v=4" />
+  <link rel="stylesheet" href="css/style.css?v=22" />
 </head>
 
 <body>
 
   <!-- Startup Splash Screen -->
-  <div id="xbox-splash" class="xbox-splash" role="dialog" aria-modal="true" aria-label="Inicio Geminuel">
+  <div id="xbox-splash" class="xbox-splash" role="dialog" aria-modal="true" aria-label="Inicio MonseNuel">
     <div class="xbox-splash-backdrop"></div>
     <div class="xbox-splash-stage">
       <div class="xbox-guide-orb-wrap">
@@ -28,15 +28,15 @@
         <div class="xbox-guide-sphere" id="xbox-splash-button" title="Haz clic para iniciar ya">
           <div class="xbox-sphere-sheen"></div>
           <div class="geminuel-guide-g" aria-hidden="true">
-            <span class="guide-g-char">G</span><span class="guide-g-cursor"></span>
+            <span class="guide-g-char">M</span><span class="guide-g-cursor"></span>
           </div>
         </div>
       </div>
       <div class="xbox-splash-info">
-        <h2 class="xbox-splash-title">GEMINUEL</h2>
+        <h2 class="xbox-splash-title"><span class="brand-monse">MONSE</span><span class="brand-nuel">NUEL</span></h2>
         <div class="xbox-splash-status" role="status" aria-live="polite">
           <span class="xbox-status-dot" aria-hidden="true"></span>
-          <span class="xbox-status-text" id="xbox-status-text">Iniciando Geminuel...</span>
+          <span class="xbox-status-text" id="xbox-status-text">Iniciando MonseNuel...</span>
         </div>
       </div>
       <button class="xbox-splash-skip" id="xbox-splash-skip" aria-label="Saltar intro">Saltar intro [Esc]</button>
@@ -90,9 +90,9 @@
       </button>
 
       <h1 class="topbar-title" id="topbar-title">
-        <span class="logo-terminal" aria-hidden="true"><span class="logo-glyph">G</span><span
+        <span class="logo-terminal" aria-hidden="true"><span class="logo-glyph">M</span><span
             class="logo-cursor"></span></span>
-        Geminuel
+        <span class="brand-name"><span class="brand-monse">Monse</span><span class="brand-nuel">Nuel</span></span>
         <span class="topbar-chat-title" id="topbar-chat-title" hidden></span>
       </h1>
 
@@ -126,36 +126,53 @@
       </div>
     </header>
 
+    <!-- Analizador de repositorios de GitHub -->
+    <section class="repo-bar" id="repo-bar" aria-label="Analizar repositorio de GitHub">
+      <form class="repo-form" id="repo-form" autocomplete="off">
+        <span class="repo-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17">
+            <path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.55v-2.1c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.12 3.05.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .3.21.66.8.55A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/>
+          </svg>
+        </span>
+        <input class="repo-input" id="repo-url-input" type="text" inputmode="url"
+          placeholder="https://github.com/usuario/repositorio"
+          aria-label="Enlace del repositorio de GitHub" spellcheck="false" />
+        <button type="submit" class="repo-btn" id="repo-load-btn">Analizar repositorio</button>
+        <button type="button" class="repo-clear-btn" id="repo-clear-btn" title="Quitar repositorio del contexto"
+          aria-label="Quitar repositorio del contexto" hidden>Quitar</button>
+      </form>
+      <p class="repo-status" id="repo-status" role="status" aria-live="polite" hidden></p>
+    </section>
+
     <!-- Chat messages -->
     <section class="chat-area" id="chat-area" aria-label="Área de conversación">
 
       <!-- Welcome screen (shown when no messages) -->
       <section class="welcome" id="welcome-screen" aria-label="Bienvenida y sugerencias">
-        <pre class="ascii-logo" aria-label="GEMINUEL">
-  ____ _____ __  __ ___ _  _ _   _ _____ _     
- / ___| ____|  \/  |_ _| \| | | | | ____| |    
-| |  _|  _| | |\/| || || .` | | | |  _| | |    
-| |_| | |___| |  | || || |\  | |_| | |___| |___
- \____|_____|_|  |_|___|_| \_|\___/|_____|_____|</pre>
+        <pre class="ascii-logo" aria-label="MONSENUEL">
+ __  __  ___  _  _ ____  ___  _  _ _   _ ___  _     
+|  \/  |/ _ \| \| / ___|| __|| \| | | | | __|| |    
+| |\/| | (_) | .` \__ \ | _| | .` | |_| | _| | |___ 
+|_|  |_|\___/|_|\_|___/ |___||_|\_|\___/|___|_|_____|</pre>
         <p class="welcome-subtitle">&gt; ¿En qué puedo ayudarte hoy?</p>
         <div class="suggestion-list" role="group" aria-label="Sugerencias de inicio rápido">
           <button class="suggestion-card terminal-prompt" data-prompt="Revisa este código y encuentra posibles bugs">
-            <span class="prompt-prefix">~/geminuel &gt;</span>
+            <span class="prompt-prefix">~/monsenuel &gt;</span>
             <span class="prompt-text">Encontrar bugs en código</span>
           </button>
           <button class="suggestion-card terminal-prompt"
             data-prompt="Ayúdame a diseñar la arquitectura para una app web escalable">
-            <span class="prompt-prefix">~/geminuel &gt;</span>
+            <span class="prompt-prefix">~/monsenuel &gt;</span>
             <span class="prompt-text">Diseño de arquitectura</span>
           </button>
           <button class="suggestion-card terminal-prompt"
             data-prompt="¿Cómo puedo refactorizar esta función para mejorar su rendimiento?">
-            <span class="prompt-prefix">~/geminuel &gt;</span>
+            <span class="prompt-prefix">~/monsenuel &gt;</span>
             <span class="prompt-text">Optimizar rendimiento</span>
           </button>
           <button class="suggestion-card terminal-prompt"
             data-prompt="Explícame cómo funciona el algoritmo de Dijkstra paso a paso">
-            <span class="prompt-prefix">~/geminuel &gt;</span>
+            <span class="prompt-prefix">~/monsenuel &gt;</span>
             <span class="prompt-text">Explicar un algoritmo</span>
           </button>
         </div>
@@ -169,8 +186,8 @@
     <!-- Input area -->
     <footer class="input-area" role="region" aria-label="Barra de envío de mensajes">
       <form class="input-wrapper" id="chat-form">
-        <textarea id="message-input" class="message-input" placeholder="Escribe un mensaje a Geminuel..." rows="1"
-          aria-label="Escribe tu mensaje para Geminuel"></textarea>
+        <textarea id="message-input" class="message-input" placeholder="Escribe un mensaje a MonseNuel..." rows="1"
+          aria-label="Escribe tu mensaje para MonseNuel"></textarea>
         <div class="input-actions">
           <span class="char-counter" id="char-counter" aria-live="polite"></span>
           <button type="submit" class="send-btn" id="send-btn" aria-label="Enviar mensaje" disabled>
@@ -182,7 +199,7 @@
           </button>
         </div>
       </form>
-      <p class="input-disclaimer">Geminuel puede cometer errores. Verifica la información.</p>
+      <p class="input-disclaimer">MonseNuel puede cometer errores. Verifica la información.</p>
     </footer>
 
   </main>
@@ -234,8 +251,8 @@
     </div>
   </dialog>
 
-  <script src="js/engine.js?v=19"></script>
-  <script src="js/app.js?v=19"></script>
+  <script src="js/engine.js?v=20"></script>
+  <script src="js/app.js?v=20"></script>
 </body>
 
 </html>
